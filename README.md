@@ -12,24 +12,3 @@ python run_mia_unified.py --output_name unified_mia --base_model_name EleutherAI
 ```
 
 This code borrows from [this repo](https://github.com/justusmattern27/neighbour-mia/tree/main).
-
-# Citation
-```
-@inproceedings{mattern-etal-2023-membership,
-    title = "Membership Inference Attacks against Language Models via Neighbourhood Comparison",
-    author = "Mattern, Justus  and
-      Mireshghallah, Fatemehsadat  and
-      Jin, Zhijing  and
-      Schoelkopf, Bernhard  and
-      Sachan, Mrinmaya  and
-      Berg-Kirkpatrick, Taylor",
-    booktitle = "Findings of the Association for Computational Linguistics: ACL 2023",
-    month = jul,
-    year = "2023",
-    address = "Toronto, Canada",
-    publisher = "Association for Computational Linguistics",
-    url = "https://aclanthology.org/2023.findings-acl.719",
-    pages = "11330--11343",
-    
-}
-```
