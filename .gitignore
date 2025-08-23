@@ -1,0 +1,29 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+mia/
+venv/
+.venv/
+env/
+.conda/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# VSCode / PyCharm
+.vscode/
+.idea/
+
+# Auto-generated dependency files
+#requirements.txt
