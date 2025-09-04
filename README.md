@@ -15,28 +15,31 @@ Classic score-based MIAs (loss/confidence) often flag **non-members** that happe
 ---
 ## Method Overview
 
-Let `LL_T(x)` be the token-level log-likelihood (negative loss) of text `x` under the **target** model `T`.  
-Let `N(x)` be a set of small, semantics-preserving perturbations (mask-fill edits).
+Let $LL_T(x)$ be the token-level log-likelihood (negative loss) of text $x$ under the **target** model $T$.  
+Let $N(x)$ be a set of small, semantics-preserving perturbations (mask-fill edits).
 
-**Neighborhood gap (target):**
+**Neighborhood gap (target)**
+
 $$
 g_T(x) = LL_T(x) - \frac{1}{|N(x)|}\sum_{z \in N(x)} LL_T(z)
 $$
 
-**Neighborhood gap (reference model `R`):**
+**Neighborhood gap (reference model $R$)**
+
 $$
 g_R(x) = LL_R(x) - \frac{1}{|N(x)|}\sum_{z \in N(x)} LL_R(z)
 $$
 
-**Self-calibrated statistic:**
+**Self-calibrated statistic**
+
 $$
 \Phi_{\mathrm{cal}}(x) = g_T(x) - g_R(x)
 $$
 
-**Z-normalized variant (better at low FPR):**
+**Z-normalized variant (better at low FPR)**
+
 $$
-\Phi_{\mathrm{zcal}}(x) =
-\frac{g_T(x)}{\sigma_T(x)} - \frac{g_R(x)}{\sigma_R(x)}
+\Phi_{\mathrm{zcal}}(x) = \frac{g_T(x)}{\sigma_T(x)} - \frac{g_R(x)}{\sigma_R(x)}
 $$
 
 > **Plain-text fallback:**  
