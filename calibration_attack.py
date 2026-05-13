@@ -561,7 +561,7 @@ def plot_attack_results(results):
     print("✓ Neighborhood attacks capture local model behavior around samples")
     print("✓ Calibration dramatically improves precision at low FPR for both methods")
     print(f"✓ Standard attack improvement: {standard_improvement:.0f}%")
-    print(f"✓ Neighborhood attack improvement: {neigh_improvement:.0f}%"), _ = precision_recall_curve(labels, uncal_scores)
+    print(f"✓ Neighborhood attack improvement: {neigh_improvement:.0f}%")
     ax.plot(rec_uncal, prec_uncal, 'b-', linewidth=2,
             label=f"Uncalibrated (PR-AUC: {results['uncalibrated']['pr_auc']:.3f})")
     

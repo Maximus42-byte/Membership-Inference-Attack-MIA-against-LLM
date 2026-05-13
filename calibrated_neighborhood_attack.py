@@ -31,6 +31,45 @@ import transformers
 # Import your project module
 import run_mia_unified as rm
 
+# --- HOTFIX v2: robust dataset loader for XSum/CNN-DailyMail (short texts) ---
+import datasets as _hf_datasets
+
+def _smart_text_dataset(dataset, key, train=True, cache_dir=None):
+    """
+    Robust loader for a single-text-column dataset.
+    - For XSum requests, fall back to cnn_dailymail (short 'highlights' field).
+    - For everything else, delegate to datasets.load_dataset as-is.
+    """
+    ds_name = str(dataset).lower()
+    split = "train" if train else "validation"
+
+    if ds_name in {"xsum", "edinburghnlp/xsum"}:
+        print("[SPV-MIA] XSum JSON files are not available; "
+              "falling back to cnn_dailymail v3.0.0 (field: 'highlights').")
+        ds = _hf_datasets.load_dataset(
+            "cnn_dailymail", "3.0.0", split=f"{split}[:10000]", cache_dir=cache_dir
+        )
+        # Use short summaries to avoid 512-token overflows
+        fallback_col = "highlights"
+        col = fallback_col if fallback_col in ds.column_names else ds.column_names[0]
+        return ds[col]
+
+    # Default: original path (works for datasets with built-in loaders)
+    ds = _hf_datasets.load_dataset(
+        dataset, split=f"{split}[:10000]", cache_dir=cache_dir
+    )
+    if key in ds.column_names:
+        return ds[key]
+    for cand in ("text", "document", "article", "highlights"):
+        if cand in ds.column_names:
+            return ds[cand]
+    return ds[ds.column_names[0]]
+
+# monkey-patch
+rm.generate_data = _smart_text_dataset
+# --- END HOTFIX ---
+
+
 
 def build_args(ns: argparse.Namespace) -> SimpleNamespace:
     """Create a SimpleNamespace that mimics rm.args for all attributes accessed inside rm.* functions."""
@@ -55,6 +94,9 @@ def build_args(ns: argparse.Namespace) -> SimpleNamespace:
         ref_model=ns.ref_model,
         revision=ns.revision,
         mask_filling_model_name=ns.mask_filling_model_name,
+        # NEW: pre-perturbation knobs expected by run_mia_unified.generate_samples
+        pre_perturb_pct=ns.pre_perturb_pct,
+        pre_perturb_span_length=ns.pre_perturb_span_length,
         # generation knobs for fill model
         do_top_k=ns.do_top_k,
         do_top_p=ns.do_top_p,
@@ -205,6 +247,10 @@ def parse_cli() -> argparse.Namespace:
     p.add_argument("--save_path", type=str, default="results/calibrated_neigh.json")
     p.add_argument("--max_tries", type=int, default=100)
     p.add_argument("--max_length", type=int, default=None)
+    # ... inside parse_cli()
+    p.add_argument("--pre_perturb_pct", type=float, default=0.0)
+    p.add_argument("--pre_perturb_span_length", type=int, default=5)
+
     return p.parse_args()
 
 
@@ -216,6 +262,16 @@ def main():
     # Build arg namespace for rm and mirror a few globals
     rm.args = build_args(ns)
     rm.args.n_perturbations = n_pert_list  # keep parity with rm naming style
+
+    # --- SAFETY NET: ensure fields exist for generate_samples() ---
+    for k, v in {
+        "pre_perturb_pct": 0.0,
+        "pre_perturb_span_length": 5,
+    }.items():
+        if not hasattr(rm.args, k):
+            setattr(rm.args, k, v)
+    # -------------------------------------------------------------
+
 
     init_models_and_tokenizers(rm.args)
     _ = prepare_data(rm.args)

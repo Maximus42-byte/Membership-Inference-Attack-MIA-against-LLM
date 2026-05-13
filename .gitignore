@@ -30,3 +30,20 @@ Thumbs.db
 
 
 /note.txt
+data/*
+
+
+# HuggingFace
+.hf_cache/
+.hf_home/
+
+# checkpoints / model outputs
+ft_distilgpt2_highlights/
+
+# Python
+__pycache__/
+*.pyc
+
+# venv
+mia/
+venv/
