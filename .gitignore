@@ -27,3 +27,7 @@ Thumbs.db
 
 # Auto-generated dependency files
 #requirements.txt
+
+echo "ft_distilgpt2_highlights/" >> .gitignore
+echo ".hf_cache/" >> .gitignore
+
