@@ -109,8 +109,26 @@ def count_masks(texts):
 def replace_masks(texts):
     n_expected = count_masks(texts)
     stop_id = mask_tokenizer.encode(f"<extra_id_{max(n_expected)}>")[0]
-    tokens = mask_tokenizer(texts, return_tensors="pt", padding=True).to(DEVICE)
-    outputs = mask_model.generate(**tokens, max_length=150, do_sample=True, top_p=args.mask_top_p, num_return_sequences=1, eos_token_id=stop_id)
+    tokens = mask_tokenizer(
+        texts, 
+        return_tensors="pt", 
+        padding=True,
+        truncation=True,  # <--- add
+        max_length=mask_tokenizer.model_max_length,  # <--- add (T5-small uses 512)
+    ).to(DEVICE)
+    outputs = mask_model.generate(
+        **tokens, 
+        #max_length=150,
+        max_new_tokens=32,
+        do_sample=True, 
+        top_p=args.mask_top_p,
+        temperature=getattr(args, "temperature", 1.0),
+        early_stopping=True,                  # <-- add
+        no_repeat_ngram_size=3,               # <-- add (cleaner fills) 
+        num_return_sequences=1, 
+        eos_token_id=stop_id,
+        pad_token_id=mask_tokenizer.eos_token_id,  # <-- add for T5
+    )
     return mask_tokenizer.batch_decode(outputs, skip_special_tokens=False)
 
 
@@ -717,6 +735,16 @@ def generate_data(dataset,key,train=True):
         data = datasets.load_dataset("json", data_files="/trunk/datasets/niloofar/pile/test.jsonl.zst",split=f"train[:10000]")[key]
     else:
         data = datasets.load_dataset(dataset, split=f'train[:10000]', cache_dir=cache_dir)[key]
+        
+        # AFTER (HF Datasets v3 compatible)
+        # ds = datasets.load_dataset(
+        #     dataset,
+        #     split='train[:10000]',
+        #     cache_dir=cache_dir,
+        #     trust_remote_code=True,   # <-- I added this
+        # )
+        # data = ds[key]
+
 
     # get unique examples, strip whitespace, and remove newlines
     # then take just the long examples, shuffle, take the first 5,000 to tokenize to save time
