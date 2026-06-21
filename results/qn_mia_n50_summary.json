@@ -1,0 +1,16 @@
+{
+  "name": "QN_MIA_n50",
+  "criterion": "qn",
+  "roc_auc": 0.5518535,
+  "pr_auc": 0.5392760298276347,
+  "TPR@1%FPR": 0.01,
+  "TPR@0.1%FPR": 0.0,
+  "TPR@0.01%FPR": 0.0,
+  "score_definition": "QN(x) = (1 + count_z[LL(z) <= LL(x)]) / (|N(x)| + 1)",
+  "info": {
+    "pct_words_masked": 0.2,
+    "span_length": 1,
+    "n_perturbations": 50,
+    "n_samples": 1000
+  }
+}
