@@ -34,36 +34,96 @@ import run_mia_unified as rm
 # --- HOTFIX v2: robust dataset loader for XSum/CNN-DailyMail (short texts) ---
 import datasets as _hf_datasets
 
+
 def _smart_text_dataset(dataset, key, train=True, cache_dir=None):
     """
-    Robust loader for a single-text-column dataset.
-    - For XSum requests, fall back to cnn_dailymail (short 'highlights' field).
-    - For everything else, delegate to datasets.load_dataset as-is.
+    Robust loader for ZN-MIA experiments.
+
+    Main thesis setup:
+      member     = CNN/DailyMail highlights, train split
+      non-member = CNN/DailyMail highlights, validation split
+
+    Also keeps xsum as an alias to this same setup for compatibility with
+    older commands.
     """
+    import random
+    import numpy as np
+
     ds_name = str(dataset).lower()
-    split = "train" if train else "validation"
 
-    if ds_name in {"xsum", "edinburghnlp/xsum"}:
-        print("[SPV-MIA] XSum JSON files are not available; "
-              "falling back to cnn_dailymail v3.0.0 (field: 'highlights').")
-        ds = _hf_datasets.load_dataset(
-            "cnn_dailymail", "3.0.0", split=f"{split}[:10000]", cache_dir=cache_dir
+    if ds_name in {"cnn_dailymail", "cnn_dailymail_highlights", "xsum", "edinburghnlp/xsum"}:
+        split = "train[:50000]" if train else "validation"
+        real_key = "highlights"
+
+        print(
+            f"[ZN-MIA Dataset] Loading cnn_dailymail v3.0.0 "
+            f"split={split}, field={real_key}"
         )
-        # Use short summaries to avoid 512-token overflows
-        fallback_col = "highlights"
-        col = fallback_col if fallback_col in ds.column_names else ds.column_names[0]
-        return ds[col]
 
-    # Default: original path (works for datasets with built-in loaders)
-    ds = _hf_datasets.load_dataset(
-        dataset, split=f"{split}[:10000]", cache_dir=cache_dir
-    )
-    if key in ds.column_names:
-        return ds[key]
-    for cand in ("text", "document", "article", "highlights"):
-        if cand in ds.column_names:
-            return ds[cand]
-    return ds[ds.column_names[0]]
+        ds = _hf_datasets.load_dataset(
+            "cnn_dailymail",
+            "3.0.0",
+            split=split,
+            cache_dir=cache_dir,
+        )
+        data = ds[real_key]
+
+    else:
+        split = "train[:50000]" if train else "test"
+        print(f"[ZN-MIA Dataset] Loading {dataset} split={split}, field={key}")
+        ds = _hf_datasets.load_dataset(
+            dataset,
+            split=split,
+            cache_dir=cache_dir,
+        )
+
+        if key in ds.column_names:
+            data = ds[key]
+        else:
+            for cand in ("text", "document", "article", "highlights"):
+                if cand in ds.column_names:
+                    data = ds[cand]
+                    break
+            else:
+                data = ds[ds.column_names[0]]
+
+    # Clean text
+    data = [x for x in data if isinstance(x, str)]
+    data = list(dict.fromkeys(data))
+    data = [rm.strip_newlines(x.strip()) for x in data if x.strip()]
+
+    # CNN/DailyMail highlights are usually short summaries, so do not force >100 words.
+    data = [x for x in data if len(x.split()) >= 20]
+
+    random.seed(0)
+    random.shuffle(data)
+
+    # Keep samples that T5/GPT-style processing can handle safely.
+    target_keep = max(rm.args.n_samples, 5000)
+    kept = []
+
+    for i in range(0, len(data), 1000):
+        batch = data[i:i + 1000]
+        tok = rm.preproc_tokenizer(batch, truncation=False, padding=False)
+        for x, ids in zip(batch, tok["input_ids"]):
+            if len(ids) <= 512:
+                kept.append(x)
+        if len(kept) >= target_keep:
+            break
+
+    data = kept[:target_keep]
+
+    print(f"Total number of usable samples: {len(data)}")
+    if len(data) > 0:
+        print(f"Average number of words: {np.mean([len(x.split()) for x in data])}")
+
+    if len(data) < rm.args.n_samples:
+        raise ValueError(
+            f"Not enough usable samples. Need {rm.args.n_samples}, got {len(data)} "
+            f"for dataset={dataset}, train={train}"
+        )
+
+    return data
 
 # monkey-patch
 rm.generate_data = _smart_text_dataset
