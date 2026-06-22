@@ -27,3 +27,7 @@ Thumbs.db
 
 # Auto-generated dependency files
 #requirements.txt
+
+
+.hf_cache/
+ft_distilgpt2_highlights/
