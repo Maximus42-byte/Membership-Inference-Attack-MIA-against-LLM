@@ -31,3 +31,5 @@ Thumbs.db
 echo "ft_distilgpt2_highlights/" >> .gitignore
 echo ".hf_cache/" >> .gitignore
 
+.hf_cache/
+ft_distilgpt2_highlights/
