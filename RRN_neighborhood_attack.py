@@ -1,0 +1,557 @@
+"""
+Residual_neighborhood_attack.py
+DeltaLL(x) = LL_T(x) - LL_R(x)
+RN(x) = [LL_T(x) - mean LL_T(N(x))] - [LL_R(x) - mean LL_R(N(x))]
+"""
+
+from __future__ import annotations
+import argparse
+import json
+import os
+from types import SimpleNamespace
+
+import numpy as np
+import torch
+import transformers
+
+# Import your project module
+import run_mia_unified as rm
+
+# --- HOTFIX v2: robust dataset loader for XSum/CNN-DailyMail (short texts) ---
+import datasets as _hf_datasets
+
+
+def _smart_text_dataset(dataset, key, train=True, cache_dir=None):
+    """
+    Robust loader for RRN-MIA experiments.
+
+    Main thesis setup:
+      member     = CNN/DailyMail highlights, train split
+      non-member = CNN/DailyMail highlights, validation split
+
+    XSum is kept as an alias for compatibility with old commands.
+    """
+    import random
+
+    ds_name = str(dataset).lower()
+
+    if ds_name in {"cnn_dailymail", "cnn_dailymail_highlights", "xsum", "edinburghnlp/xsum"}:
+        split = "train[:50000]" if train else "validation"
+        real_key = "highlights"
+
+        print(
+            f"[RRN-MIA Dataset] Loading cnn_dailymail v3.0.0 "
+            f"split={split}, field={real_key}"
+        )
+
+        ds = _hf_datasets.load_dataset(
+            "cnn_dailymail",
+            "3.0.0",
+            split=split,
+            cache_dir=cache_dir,
+        )
+        data = ds[real_key]
+
+    else:
+        split = "train[:50000]" if train else "test"
+        print(f"[RRN-MIA Dataset] Loading {dataset} split={split}, field={key}")
+
+        ds = _hf_datasets.load_dataset(
+            dataset,
+            split=split,
+            cache_dir=cache_dir,
+        )
+
+        if key in ds.column_names:
+            data = ds[key]
+        else:
+            for cand in ("text", "document", "article", "highlights"):
+                if cand in ds.column_names:
+                    data = ds[cand]
+                    break
+            else:
+                data = ds[ds.column_names[0]]
+
+    # Clean text
+    data = [x for x in data if isinstance(x, str)]
+    data = list(dict.fromkeys(data))
+    data = [rm.strip_newlines(x.strip()) for x in data if x.strip()]
+
+    # CNN/DailyMail highlights are summaries, so do not force >100 words.
+    data = [x for x in data if len(x.split()) >= 20]
+
+    random.seed(0)
+    random.shuffle(data)
+
+    target_keep = max(getattr(rm.args, "n_samples", 1000), 5000)
+    kept = []
+
+    # Keep examples that the T5 perturbation pipeline can handle.
+    for i in range(0, len(data), 1000):
+        batch = data[i:i + 1000]
+        tok = rm.preproc_tokenizer(batch, truncation=False, padding=False)
+        for x, ids in zip(batch, tok["input_ids"]):
+            if len(ids) <= 512:
+                kept.append(x)
+        if len(kept) >= target_keep:
+            break
+
+    data = kept[:target_keep]
+
+    print(f"Total number of usable samples: {len(data)}")
+    if len(data) > 0:
+        print(f"Average number of words: {np.mean([len(x.split()) for x in data])}")
+
+    if len(data) < getattr(rm.args, "n_samples", 1000):
+        raise ValueError(
+            f"Not enough usable samples. Need {rm.args.n_samples}, got {len(data)} "
+            f"for dataset={dataset}, train={train}"
+        )
+
+    return data
+
+# monkey-patch
+rm.generate_data = _smart_text_dataset
+# --- END HOTFIX ---
+
+
+
+def build_args(ns: argparse.Namespace) -> SimpleNamespace:
+    """Create a SimpleNamespace that mimics rm.args for all attributes accessed inside rm.* functions."""
+    return SimpleNamespace(
+        # dataset selection
+        dataset_member=ns.dataset_member,
+        dataset_member_key=ns.dataset_member_key,
+        dataset_nonmember=ns.dataset_nonmember,
+        dataset_nonmember_key=ns.dataset_nonmember_key,
+        n_samples=ns.n_samples,
+        batch_size=ns.batch_size,
+        cache_dir=ns.cache_dir,
+        # perturbation/neighborhood
+        pct_words_masked=ns.pct_words_masked,
+        span_length=ns.span_length,
+        n_perturbation_rounds=ns.n_perturbation_rounds,
+        buffer_size=ns.buffer_size,
+        chunk_size=ns.chunk_size,
+        ceil_pct=ns.ceil_pct,
+        # models (target/ref + mask-filling)
+        base_model_name=ns.base_model_name,
+        ref_model=ns.ref_model,
+        revision=ns.revision,
+        mask_filling_model_name=ns.mask_filling_model_name,
+        # NEW: pre-perturbation knobs expected by run_mia_unified.generate_samples
+        pre_perturb_pct=ns.pre_perturb_pct,
+        pre_perturb_span_length=ns.pre_perturb_span_length,
+        # generation knobs for fill model
+        do_top_k=ns.do_top_k,
+        do_top_p=ns.do_top_p,
+        temperature=ns.temperature,
+        mask_top_p=ns.mask_top_p,
+        # mixed-precision / memory
+        int8=ns.int8,
+        half=ns.half,
+        # misc flags used in rm
+        random_fills=ns.random_fills,
+        random_fills_tokens=False,
+        baselines_only=False,
+        skip_baselines=False,
+        tok_by_tok=False,
+        # OpenAI (unused here)
+        openai_model=None,
+        openai_key=None,
+        max_tries=ns.max_tries,
+        max_length=ns.max_length,
+    )
+
+
+def init_models_and_tokenizers(args: SimpleNamespace):
+    """Instantiate target, reference, and mask-filling objects as globals in the rm module, mirroring rm.__main__."""
+    # Device + cache
+    rm.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    rm.cache_dir = args.cache_dir
+    os.makedirs(args.cache_dir, exist_ok=True)
+
+    # Tokenizer for token counting used inside rm
+    rm.GPT2_TOKENIZER = transformers.GPT2Tokenizer.from_pretrained("gpt2", cache_dir=args.cache_dir)
+
+    # Load target model/tokenizer as module globals
+    rm.base_model, rm.base_tokenizer = rm.load_base_model_and_tokenizer(args.base_model_name)
+    rm.load_base_model()
+
+    # Optional reference model (enables calibrated Δ log-likelihoods inside rm.get_ll)
+    if args.ref_model:
+        rm.ref_model, rm.ref_tokenizer = rm.load_base_model_and_tokenizer(args.ref_model)
+        rm.load_ref_model()
+
+    # Mask-filling model + tokenizers for neighborhood generation
+    # (replicates rm.__main__ logic succinctly)
+    if not args.random_fills:
+        int8_kwargs = {}
+        half_kwargs = {}
+        if args.int8:
+            int8_kwargs = dict(load_in_8bit=True, device_map="auto", torch_dtype=torch.bfloat16)
+        elif args.half:
+            half_kwargs = dict(torch_dtype=torch.bfloat16)
+
+        # Load mask-filling model (e.g., T5)
+        print(f"Loading mask filling model {args.mask_filling_model_name}…")
+        rm.mask_model = transformers.AutoModelForSeq2SeqLM.from_pretrained(
+            args.mask_filling_model_name, cache_dir=args.cache_dir, **int8_kwargs, **half_kwargs
+        )
+        try:
+            n_positions = rm.mask_model.config.n_positions
+        except AttributeError:
+            n_positions = 512
+    else:
+        n_positions = 512
+
+    rm.preproc_tokenizer = transformers.AutoTokenizer.from_pretrained(
+        "t5-small", model_max_length=512, cache_dir=args.cache_dir
+    )
+    rm.mask_tokenizer = transformers.AutoTokenizer.from_pretrained(
+        args.mask_filling_model_name, model_max_length=n_positions, cache_dir=args.cache_dir
+    )
+
+    # Globals used in rm.*
+    rm.mask_filling_model_name = args.mask_filling_model_name
+
+
+
+def activate_rn_scoring():
+    """
+    Activate RN-MIA scoring by monkey-patching rm.get_ll and rm.get_lls.
+
+    After this patch:
+        rm.get_ll(x) = LL_target(x) - LL_reference(x)
+
+    Then the existing neighborhood difference criterion 'd' becomes:
+
+        [LL_T(x) - LL_R(x)] - mean_z [LL_T(z) - LL_R(z)]
+      = g_T(x) - g_R(x)
+
+    which is RN-MIA.
+    """
+    if not getattr(rm.args, "ref_model", None):
+        raise ValueError("RN-MIA requires --ref_model.")
+
+    def _safe_model_max_length(tokenizer):
+        max_len = getattr(tokenizer, "model_max_length", None)
+        if max_len is None or max_len > 100000:
+            return None
+        return int(max_len)
+
+    def _ll_for_model(text, model, tokenizer):
+        with torch.no_grad():
+            max_len = _safe_model_max_length(tokenizer)
+
+            if max_len is None:
+                tokenized = tokenizer(text, return_tensors="pt").to(rm.DEVICE)
+            else:
+                tokenized = tokenizer(
+                    text,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=max_len,
+                ).to(rm.DEVICE)
+
+            labels = tokenized.input_ids
+            return -model(**tokenized, labels=labels).loss.item()
+
+    def _rn_ll(text):
+        target_ll = _ll_for_model(text, rm.base_model, rm.base_tokenizer)
+        ref_ll = _ll_for_model(text, rm.ref_model, rm.ref_tokenizer)
+        return target_ll - ref_ll
+
+    def _rn_lls(texts):
+        return [_rn_ll(text) for text in texts]
+
+    rm.get_ll = _rn_ll
+    rm.get_lls = _rn_lls
+
+    print("[RN-MIA] Activated RN scoring: get_ll(x) = LL_target(x) - LL_reference(x)")
+
+
+
+def prepare_data(args: SimpleNamespace):
+    """Build rm.data = {"member": [...], "nonmember": [...]} using rm.generate_data + rm.generate_samples."""
+    print(f"Loading dataset {args.dataset_member} (member) and {args.dataset_nonmember} (nonmember)…")
+    data_member = rm.generate_data(args.dataset_member, args.dataset_member_key, cache_dir=args.cache_dir)
+    data_nonmember = rm.generate_data(args.dataset_nonmember, args.dataset_nonmember_key, train=False, cache_dir=args.cache_dir)
+
+    data, seq_lens, n_samples = rm.generate_samples(
+        data_member[: args.n_samples], data_nonmember[: args.n_samples], batch_size=args.batch_size
+    )
+
+    rm.data = data
+    rm.n_perturbation_rounds = args.n_perturbation_rounds
+    return n_samples
+
+
+# 
+def _rrn_rank_score(center_ll, neighbor_lls):
+    """
+    RRN rank score over residual log-likelihoods.
+
+    center_ll and neighbor_lls are already residual scores because
+    activate_rn_scoring() patches rm.get_ll(x) = LL_T(x) - LL_R(x).
+
+    p = (1 + count[neighbor >= center]) / (k + 1)
+    score = 1 - p
+
+    Larger score means more suspicious/member-like.
+    """
+    arr = np.asarray(neighbor_lls, dtype=float)
+
+    if arr.size == 0:
+        return 0.0, 1.0, 0, 0
+
+    count_ge = int(np.sum(arr >= float(center_ll)))
+    p_value = float((1.0 + count_ge) / (arr.size + 1.0))
+    score = float(1.0 - p_value)
+
+    return score, p_value, count_ge, int(arr.size)
+
+
+def run_rrn_perturbation_experiment(results, span_length=10, n_perturbations=1, n_samples=500):
+    """
+    Residual Rank Neighbourhood MIA.
+
+    Since activate_rn_scoring() has already changed rm.get_ll to:
+        LL_T(x) - LL_R(x)
+
+    the fields below are residual likelihoods:
+        original_ll
+        sampled_ll
+        all_perturbed_original_ll
+        all_perturbed_sampled_ll
+
+    RRN checks whether the original residual score lies in the extreme
+    upper tail of its residual-neighbour distribution.
+    """
+    predictions = {"real": [], "samples": []}
+
+    for res in results:
+        # nonmember/original side
+        real_score, real_p, real_count_ge, real_k = _rrn_rank_score(
+            res["original_ll"],
+            res["all_perturbed_original_ll"],
+        )
+
+        # member/sampled side
+        sample_score, sample_p, sample_count_ge, sample_k = _rrn_rank_score(
+            res["sampled_ll"],
+            res["all_perturbed_sampled_ll"],
+        )
+
+        predictions["real"].append(real_score)
+        predictions["samples"].append(sample_score)
+
+        # Store metadata for later inspection
+        res["rrn_original_score"] = float(real_score)
+        res["rrn_original_p_value"] = float(real_p)
+        res["rrn_original_count_ge"] = int(real_count_ge)
+        res["rrn_original_k"] = int(real_k)
+
+        res["rrn_sampled_score"] = float(sample_score)
+        res["rrn_sampled_p_value"] = float(sample_p)
+        res["rrn_sampled_count_ge"] = int(sample_count_ge)
+        res["rrn_sampled_k"] = int(sample_k)
+
+    fpr, tpr, roc_auc = rm.get_roc_metrics(predictions["real"], predictions["samples"])
+    precision, recall, pr_auc = rm.get_precision_recall_metrics(
+        predictions["real"],
+        predictions["samples"],
+    )
+
+    name = f"RRN_MIA_n{n_perturbations}"
+    print(f"{name} ROC AUC: {roc_auc}, PR AUC: {pr_auc}")
+
+    return {
+        "name": name,
+        "criterion": "rrn",
+        "internal_score": "residual_rank",
+        "score_definition": (
+            "RRN_score(x) = 1 - (1 + count_z[DeltaLL(z) >= DeltaLL(x)]) / (k + 1), "
+            "where DeltaLL(y) = LL_T(y) - LL_R(y)."
+        ),
+        "predictions": predictions,
+        "info": {
+            "pct_words_masked": rm.args.pct_words_masked,
+            "span_length": span_length,
+            "n_perturbations": n_perturbations,
+            "n_samples": n_samples,
+            "ref_model": getattr(rm.args, "ref_model", None),
+        },
+        "raw_results": results,
+        "metrics": {
+            "roc_auc": roc_auc,
+            "fpr": fpr,
+            "tpr": tpr,
+        },
+        "pr_metrics": {
+            "pr_auc": pr_auc,
+            "precision": precision,
+            "recall": recall,
+        },
+        "loss": 1 - pr_auc,
+    }
+
+
+
+def run_attack(args: SimpleNamespace):
+    """
+    Run RN-MIA or RRN-MIA.
+
+    RN:
+      - use residual likelihoods
+      - apply neighbourhood mean-gap criterion d
+
+    RRN:
+      - use residual likelihoods
+      - apply rank / empirical p-value over residual neighbours
+    """
+    outputs = []
+
+    criterion = args.criterion.lower().strip()
+
+    if criterion in {"rn", "rrn"}:
+        activate_rn_scoring()
+
+    for n_pert in args.n_perturbations:
+        results = rm.get_perturbation_results(
+            span_length=args.span_length,
+            n_perturbations=n_pert,
+            n_samples=args.n_samples,
+        )
+
+        if criterion == "rrn":
+            out = run_rrn_perturbation_experiment(
+                results,
+                span_length=args.span_length,
+                n_perturbations=n_pert,
+                n_samples=args.n_samples,
+            )
+
+        elif criterion == "rn":
+            out = rm.run_perturbation_experiment(
+                results,
+                criterion="d",
+                span_length=args.span_length,
+                n_perturbations=n_pert,
+                n_samples=args.n_samples,
+            )
+            out["name"] = f"RN_MIA_n{n_pert}"
+            out["criterion"] = "rn"
+            out["internal_criterion"] = "d"
+            out["score_definition"] = (
+                "RN(x) = [LL_T(x)-mean_z LL_T(z)] - "
+                "[LL_R(x)-mean_z LL_R(z)]"
+            )
+
+        else:
+            out = rm.run_perturbation_experiment(
+                results,
+                criterion=criterion,
+                span_length=args.span_length,
+                n_perturbations=n_pert,
+                n_samples=args.n_samples,
+            )
+            out["name"] = f"neigh_{criterion}_n{n_pert}"
+            out["criterion"] = criterion
+
+        outputs.append(out)
+
+    os.makedirs(os.path.dirname(args.save_path) or ".", exist_ok=True)
+
+    with open(args.save_path, "w") as f:
+        json.dump(outputs, f, indent=2)
+
+    print(f"Saved RRN/RN-MIA results to {args.save_path}")
+
+def parse_cli() -> argparse.Namespace:
+    p = argparse.ArgumentParser()
+    # Datasets
+    p.add_argument("--dataset_member", type=str, default="xsum")
+    p.add_argument("--dataset_member_key", type=str, default="document")
+    p.add_argument("--dataset_nonmember", type=str, default="xsum")
+    p.add_argument("--dataset_nonmember_key", type=str, default="document")
+    p.add_argument("--n_samples", type=int, default=200)
+    p.add_argument("--batch_size", type=int, default=8)
+    p.add_argument("--cache_dir", type=str, default="/trunk/model-hub")
+    # Neighborhood (mask filling)
+    p.add_argument("--pct_words_masked", type=float, default=0.3)
+    p.add_argument("--span_length", type=int, default=2)
+    p.add_argument("--n_perturbations", type=str, default="1,10")  # comma-separated
+    p.add_argument("--n_perturbation_rounds", type=int, default=1)
+    p.add_argument("--buffer_size", type=int, default=1)
+    p.add_argument("--chunk_size", type=int, default=100)
+    p.add_argument("--ceil_pct", action="store_true")
+    # Target/Reference models
+    p.add_argument("--base_model_name", type=str, default="gpt2-medium")
+    p.add_argument("--ref_model", type=str, default=None)
+    p.add_argument("--revision", type=str, default="main")
+    # Mask-filling model
+    p.add_argument("--mask_filling_model_name", type=str, default="t5-3b")
+    p.add_argument("--do_top_k", action="store_true")
+    p.add_argument("--do_top_p", action="store_true")
+    p.add_argument("--temperature", type=float, default=1.0)
+    p.add_argument("--mask_top_p", type=float, default=1.0)
+    p.add_argument("--int8", action="store_true")
+    p.add_argument("--half", action="store_true")
+    p.add_argument("--random_fills", action="store_true")
+    # Criterion and output
+    #p.add_argument("--criterion", type=str, choices=["d", "z"], default="z")
+    p.add_argument(
+        "--criterion",
+        type=str,
+        choices=["d", "z", "rn", "rrn"],
+        default="rrn",
+        help="Attack criterion. Use rrn for Residual Rank Neighbourhood MIA.")
+    p.add_argument("--save_path", type=str, default="results/rrn_mia.json")
+    p.add_argument("--max_tries", type=int, default=100)
+    p.add_argument("--max_length", type=int, default=None)
+    # ... inside parse_cli()
+    p.add_argument("--pre_perturb_pct", type=float, default=0.0)
+    p.add_argument("--pre_perturb_span_length", type=int, default=5)
+
+    return p.parse_args()
+
+
+def main():
+    ns = parse_cli()
+    # Parse list of perturbations
+    n_pert_list = [int(x.strip()) for x in ns.n_perturbations.split(",") if x.strip()]
+
+    # Build arg namespace for rm and mirror a few globals
+    rm.args = build_args(ns)
+    rm.args.n_perturbations = n_pert_list  # keep parity with rm naming style
+
+    # --- SAFETY NET: ensure fields exist for generate_samples() ---
+    for k, v in {
+        "pre_perturb_pct": 0.0,
+        "pre_perturb_span_length": 5,
+    }.items():
+        if not hasattr(rm.args, k):
+            setattr(rm.args, k, v)
+    # -------------------------------------------------------------
+
+
+    init_models_and_tokenizers(rm.args)
+    _ = prepare_data(rm.args)
+
+    # Carry parsed list into rm.args for our loop
+    rm.args.n_perturbations = n_pert_list
+    rm.args.criterion = ns.criterion
+    rm.args.save_path = ns.save_path
+
+    # Attach to a lightweight container for convenience in run_attack
+    exec_args = SimpleNamespace(**rm.args.__dict__)
+    exec_args.n_perturbations = n_pert_list
+    exec_args.criterion = ns.criterion
+    exec_args.save_path = ns.save_path
+
+    run_attack(exec_args)
+
+
+if __name__ == "__main__":
+    main()
