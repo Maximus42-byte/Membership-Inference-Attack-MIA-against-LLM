@@ -1,48 +1,76 @@
 <div dir="rtl" align="right">
 
-# QN-MIA: حمله استنتاج عضویت همسایگی با Quantile / Empirical P-Value
+# QN-MIA: Quantile / Rank Neighbourhood Membership Inference Attack
 
-## 1. هدف این شاخه
+## خلاصه کوتاه
 
-این شاخه مربوط به نسخه‌ی **QN-MIA** است؛ یعنی **Quantile Neighborhood Membership Inference Attack**.
+**QN-MIA** یا **Quantile Neighbourhood Membership Inference Attack** یک variant غیرپارامتری از حمله‌ی اصلی **Neighbourhood Attack** است.
 
-هدف QN-MIA این است که حمله‌ی اولیه‌ی **Neighbourhood Attack / N-MIA** را از یک score میانگین‌محور به یک آزمون **rank-based** و **non-parametric** تبدیل کند.
-
-در N-MIA، متن اصلی با میانگین neighbourها مقایسه می‌شود. در ZN-MIA، این اختلاف با standard deviation neighbourها نرمال می‌شود. اما در QN-MIA به جای اینکه فقط mean یا std را نگاه کنیم، جایگاه متن اصلی را در توزیع local neighbourها می‌سنجیم.
+در حمله‌ی اصلی، متن اصلی با میانگین log-likelihood همسایه‌هایش مقایسه می‌شود. در ZN-MIA، این اختلاف با standard deviation همسایه‌ها نرمال می‌شود. اما در QN-MIA به جای تکیه بر mean و std، جایگاه یا **rank** متن اصلی در توزیع همسایه‌های خودش اندازه‌گیری می‌شود.
 
 به زبان ساده:
-
-> **N-MIA** می‌پرسد: آیا متن اصلی از میانگین neighbourها بهتر score می‌گیرد؟
->
-> **ZN-MIA** می‌پرسد: آیا این بهتر بودن نسبت به پراکندگی neighbourها معنادار است؟
->
-> **QN-MIA** می‌پرسد: آیا متن اصلی در extreme tail توزیع neighbourهای خودش قرار گرفته است؟
-
-این روش مخصوصاً برای **Low-FPR** مهم است، چون در تنظیمات privacy auditing معمولاً می‌خواهیم فقط وقتی یک نمونه را member اعلام کنیم که شواهد بسیار قوی باشد.
-
----
-
-## 2. پیش‌زمینه: حمله اولیه Neighbourhood Attack
-
-در حمله‌ی اولیه، برای هر متن هدف `x`، یک مجموعه از متن‌های مشابه ساخته می‌شود:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-N(x) = {x'_1, x'_2, ..., x'_k}
+N-MIA  : Is the original text better than the mean of its neighbours?
+ZN-MIA : Is this advantage large relative to local variance?
+QN-MIA : Is the original text in the extreme tail of its neighbourhood?
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-این متن‌ها neighbour یا perturbation هستند. در پیاده‌سازی فعلی، معمولاً با روش **span masking + T5 mask filling** ساخته می‌شوند:
+هدف QN-MIA این است که حمله را از یک score میانگین‌محور به یک آزمون **rank-based** و **non-parametric** تبدیل کند. این ایده مخصوصاً برای privacy auditing و ناحیه‌ی **low-FPR** جذاب است، چون فقط وقتی یک نمونه member-like محسوب می‌شود که نسبت به تقریباً همه‌ی همسایه‌های خودش extreme باشد.
+
+---
+
+## جایگاه QN-MIA در خانواده حملات
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+N-MIA   = Original Neighbourhood Attack
+ZN-MIA  = Z-score Neighbourhood Attack
+RN-MIA  = Residual Neighbourhood Attack
+QN-MIA  = Quantile / Rank Neighbourhood Attack
+RRN-MIA = Residual Rank Neighbourhood Attack
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+QN-MIA از نظر مفهومی یک گام مهم است، چون حمله را از score عددی ساده به سمت **local hypothesis testing** می‌برد. با این حال، چون فقط rank را نگه می‌دارد و magnitude اختلاف likelihood را کنار می‌گذارد، ممکن است همیشه از روش‌های magnitude-based بهتر نباشد.
+
+---
+
+## حمله اولیه Neighbourhood Attack
+
+در حمله‌ی اصلی، برای هر متن هدف \(x\)، مجموعه‌ای از neighbourها ساخته می‌شود:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+N(x)=\{x'_1,x'_2,\dots,x'_k\}
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+در پیاده‌سازی ما، neighbourها با **span masking + T5 mask filling** ساخته می‌شوند:
 
 1. چند span از متن اصلی ماسک می‌شود.
 2. مدل mask-filling مثل T5 ماسک‌ها را پر می‌کند.
-3. `k` متن perturb شده ساخته می‌شود.
+3. \(k\) متن perturb شده ساخته می‌شود.
 
 سپس target model روی متن اصلی و neighbourها ارزیابی می‌شود:
 
@@ -50,46 +78,37 @@ N(x) = {x'_1, x'_2, ..., x'_k}
 
 <div dir="ltr" align="left">
 
-```text
-LL_T(x)
-LL_T(x'_1), LL_T(x'_2), ..., LL_T(x'_k)
-```
+$$
+LL_T(x), \quad LL_T(x'_1), \dots, LL_T(x'_k)
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-در اینجا `LL_T` یعنی log-likelihood متن زیر target model.
-
-در N-MIA، score به شکل زیر است:
+در N-MIA، score اصلی به شکل زیر است:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-d(x) = LL_T(x) - mean(LL_T(N(x)))
-```
-
-```text
-d(x) = LL_T(x) - (1/k) * Σ_i LL_T(x'_i)
-```
+$$
+d(x)=LL_T(x)-\frac{1}{k}\sum_{i=1}^{k}LL_T(x'_i)
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-اگر `d(x)` بزرگ باشد، یعنی مدل هدف متن اصلی را نسبت به neighbourهای بسیار مشابهش بهتر می‌شناسد. این می‌تواند نشانه‌ی membership باشد.
+اگر \(d(x)\) بزرگ باشد، یعنی target model متن اصلی را نسبت به neighbourهای بسیار مشابهش بهتر می‌شناسد. این می‌تواند نشانه‌ی membership باشد.
 
 ---
 
-## 3. مشکل d-score و z-score
+## مشکل d-score و z-score
 
-### 3.1. مشکل d-score
+### مشکل d-score
 
 در d-score فقط فاصله‌ی متن اصلی از میانگین neighbourها مهم است. اما اگر چند neighbour خراب یا outlier وجود داشته باشد، mean می‌تواند گمراه‌کننده شود.
-
-مثلاً:
 
 </div>
 
@@ -106,73 +125,65 @@ d             = 6.125
 
 <div dir="rtl" align="right">
 
-اینجا یک neighbour خیلی بد داریم: `-40.0`. همین مقدار mean را پایین می‌کشد و باعث می‌شود `d(x)` بیش از حد بزرگ شود. در نتیجه ممکن است یک non-member اشتباهاً member تشخیص داده شود.
+اینجا یک neighbour خیلی بد داریم: `-40.0`. همین مقدار mean را پایین می‌کشد و باعث می‌شود \(d(x)\) بیش از حد بزرگ شود.
 
-### 3.2. مشکل z-score
+### مشکل z-score
 
-در ZN-MIA، score این است:
+در ZN-MIA، score به شکل زیر است:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-z(x) = (LL_T(x) - mean(LL_T(N(x)))) / std(LL_T(N(x)))
-```
+$$
+z(x)=\frac{LL_T(x)-\mu_N(x)}{\sigma_N(x)+\epsilon}
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-این روش بهتر از d-score است، چون پراکندگی neighbourها را هم در نظر می‌گیرد. اما هنوز به mean و std وابسته است. اگر توزیع neighbourها skewed، heavy-tailed، یا شامل outlier باشد، mean و std ممکن است نماینده‌ی خوبی برای neighbourhood نباشند.
+این روش بهتر از d-score است، چون پراکندگی neighbourها را در نظر می‌گیرد. اما هنوز به mean و std وابسته است. اگر توزیع neighbourها skewed، heavy-tailed یا شامل outlier باشد، mean و std ممکن است نماینده‌ی خوبی برای neighbourhood نباشند.
 
 پس QN-MIA می‌گوید:
 
-> به جای اینکه عددهای دقیق mean و std را جدی بگیریم، فقط rank متن اصلی را در میان neighbourهای خودش نگاه کنیم.
+> به جای اینکه عددهای دقیق mean و std را جدی بگیریم، فقط rank متن اصلی را در میان neighbourهای خودش نگاه می‌کنیم.
 
 ---
 
-## 4. ایده اصلی QN-MIA
+## ایده اصلی QN-MIA
 
 QN-MIA یک روش **non-parametric** است. یعنی فرض نمی‌کند log-likelihood neighbourها Gaussian یا نرمال باشند.
 
-ایده این است:
-
-> اگر متن `x` واقعاً member باشد، target model احتمالاً به آن log-likelihood بالاتری نسبت به بیشتر neighbourها می‌دهد.
-
-پس به جای محاسبه‌ی mean یا std، متن اصلی را در کنار neighbourها rank می‌کنیم.
-
-برای log-likelihood، مقدار بزرگ‌تر بهتر است. بنابراین اگر `LL_T(x)` از همه یا تقریباً همه‌ی neighbourها بزرگ‌تر باشد، متن اصلی در extreme upper tail قرار دارد و membership signal قوی‌تر است.
+برای log-likelihood، مقدار بزرگ‌تر بهتر است. بنابراین اگر \(LL_T(x)\) از همه یا تقریباً همه‌ی neighbourها بزرگ‌تر باشد، متن اصلی در extreme upper tail قرار دارد و membership signal قوی‌تر است.
 
 ---
 
-## 5. تعریف Quantile Score
+## تعریف Quantile Score
 
-برای هر متن `x`، مجموعه‌ی زیر را داریم:
+برای هر متن \(x\)، مجموعه‌ی زیر را داریم:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-S(x) = {LL_T(x), LL_T(x'_1), ..., LL_T(x'_k)}
-```
+$$
+S(x)=\{LL_T(x),LL_T(x'_1),\dots,LL_T(x'_k)\}
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-حالا rank متن اصلی را در این مجموعه محاسبه می‌کنیم.
-
-اگر log-likelihood بالاتر نشانه‌ی membership باشد، یک quantile ساده می‌تواند این‌گونه تعریف شود:
+اگر log-likelihood بالاتر نشانه‌ی membership باشد، quantile score به شکل زیر تعریف می‌شود:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-q(x) = (1 + Σ_i 1[LL_T(x'_i) <= LL_T(x)]) / (k + 1)
-```
+$$
+q(x)=\frac{1+\sum_{i=1}^{k}\mathbf{1}[LL_T(x'_i)\leq LL_T(x)]}{k+1}
+$$
 
 </div>
 
@@ -180,235 +191,125 @@ q(x) = (1 + Σ_i 1[LL_T(x'_i) <= LL_T(x)]) / (k + 1)
 
 تفسیر:
 
-- اگر `q(x)` نزدیک 1 باشد، متن اصلی از اکثر neighbourها log-likelihood بالاتری دارد.
-- اگر `q(x)` نزدیک 0.5 باشد، متن اصلی رفتار معمولی دارد.
-- اگر `q(x)` پایین باشد، متن اصلی حتی از neighbourهای خودش هم بهتر نیست.
+- اگر \(q(x)\) نزدیک 1 باشد، متن اصلی از اکثر neighbourها log-likelihood بالاتری دارد.
+- اگر \(q(x)\) نزدیک 0.5 باشد، متن اصلی رفتار معمولی دارد.
+- اگر \(q(x)\) پایین باشد، متن اصلی حتی از neighbourهای خودش هم بهتر نیست.
 
-پس در حالت quantile score:
+در پیاده‌سازی این شاخه، score اصلی QN به صورت quantile/rank تعریف شده است:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-q(x) high  => likely member
-q(x) low   => likely non-member
+QN(x) = (1 + count_z[LL(z) <= LL(x)]) / (|N(x)| + 1)
 ```
 
 </div>
 
 <div dir="rtl" align="right">
+
+هرچه این score بزرگ‌تر باشد، نمونه member-likeتر است.
 
 ---
 
-## 6. تعریف Empirical P-Value
+## تعریف معادل Empirical P-Value
 
-می‌توان همین ایده را به صورت empirical p-value هم نوشت. چون برای log-likelihood مقدار بالاتر بهتر است، p-value یک‌طرفه را این‌طور تعریف می‌کنیم:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-p(x) = (1 + Σ_i 1[LL_T(x'_i) >= LL_T(x)]) / (k + 1)
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-تفسیر:
-
-- صورت کسر می‌شمارد چند neighbour از متن اصلی بهتر یا مساوی هستند.
-- اگر هیچ neighbour از متن اصلی بهتر نباشد، p-value حداقل می‌شود.
-- p-value کوچک یعنی متن اصلی نسبت به neighbourهای خودش خیلی extreme است.
-
-پس decision rule می‌تواند این باشد:
+همین ایده را می‌توان به صورت empirical p-value نیز نوشت:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-if p(x) < alpha:
-    predict member
-else:
-    predict non-member
-```
+$$
+p(x)=\frac{1+\sum_{i=1}^{k}\mathbf{1}[LL_T(x'_i)\geq LL_T(x)]}{k+1}
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-در اینجا `alpha` می‌تواند متناسب با هدف Low-FPR انتخاب شود، مثلاً:
+در این حالت:
 
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-alpha = 0.05   # target FPR around 5%
-alpha = 0.01   # target FPR around 1%
-alpha = 0.001  # target FPR around 0.1%, if k is large enough
-```
-
-</div>
-
-<div dir="rtl" align="right">
+- \(p(x)\) کوچک یعنی متن اصلی نسبت به neighbourهای خودش extreme است.
+- \(q(x)\) بزرگ تقریباً معادل \(p(x)\) کوچک است.
+- برای ROC/AUC بهتر است score طوری ذخیره شود که مقدار بزرگ‌تر یعنی member-likeتر باشد. بنابراین یا از \(q(x)\) استفاده می‌کنیم یا از \(-p(x)\).
 
 ---
 
-## 7. نکته مهم: تفاوت Loss و Log-Likelihood
+## نکته مهم: تفاوت Loss و Log-Likelihood
 
-در کد فعلی معمولاً با log-likelihood کار می‌کنیم. اما اگر در یک پیاده‌سازی دیگر با loss کار شود، جهت inequality عوض می‌شود.
-
-### 7.1. اگر با log-likelihood کار کنیم
-
-برای member انتظار داریم:
+در کد فعلی با log-likelihood کار می‌کنیم. در این حالت مقدار بزرگ‌تر بهتر است:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-LL_T(x) > LL_T(x'_i)
+LL_T(x) > LL_T(x'_i)  => more member-like
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-پس empirical p-value:
+اما اگر در پیاده‌سازی دیگری با loss کار شود، جهت inequality عوض می‌شود:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-p_LL(x) = (1 + Σ_i 1[LL_T(x'_i) >= LL_T(x)]) / (k + 1)
+Loss_T(x) < Loss_T(x'_i)  => more member-like
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-### 7.2. اگر با loss کار کنیم
-
-برای member انتظار داریم:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-Loss_T(x) < Loss_T(x'_i)
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-پس empirical p-value:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-p_loss(x) = (1 + Σ_i 1[Loss_T(x'_i) <= Loss_T(x)]) / (k + 1)
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-در این branch باید دقیقاً مشخص شود که score از نوع `LL` است یا `loss`، چون جهت threshold کاملاً به آن وابسته است.
+بنابراین هنگام پیاده‌سازی QN-MIA باید دقیقاً مشخص باشد که score بر پایه‌ی `LL` است یا `loss`.
 
 ---
 
-## 8. چرا QN-MIA برای Low-FPR مهم است؟
+## محدودیت resolution وابسته به تعداد neighbourها
 
-در privacy auditing، معمولاً accuracy کافی نیست. چیزی که مهم‌تر است، عملکرد در FPRهای خیلی پایین است:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-TPR@5%FPR
-TPR@1%FPR
-TPR@0.1%FPR
-TPR@0.01%FPR
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-دلیلش این است که در دنیای واقعی تعداد non-memberها بسیار زیاد است. اگر FPR بالا باشد، حتی attack با accuracy خوب هم غیرقابل اعتماد می‌شود.
-
-QN-MIA برای Low-FPR طبیعی است، چون فقط وقتی member اعلام می‌کند که متن اصلی در tail بسیار extreme توزیع neighbourهای خودش باشد.
-
-به زبان ساده:
-
-> QN-MIA به جای اینکه بگوید «اختلاف عددی زیاد است»، می‌گوید «متن اصلی از تقریباً همه‌ی neighbourهای خودش بهتر است». این شواهد برای Low-FPR قابل اعتمادتر است.
-
----
-
-## 9. محدودیت مهم: Resolution وابسته به تعداد neighbourها
-
-اگر `k` neighbour داشته باشیم، کوچک‌ترین empirical p-value ممکن برابر است با:
+اگر \(k\) neighbour داشته باشیم، کوچک‌ترین empirical p-value ممکن برابر است با:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-p_min = 1 / (k + 1)
-```
+$$
+p_{min}=\frac{1}{k+1}
+$$
 
 </div>
 
 <div dir="rtl" align="right">
 
-بنابراین اگر neighbour کم باشد، p-value نمی‌تواند خیلی کوچک شود.
+و تعداد سطح‌های ممکن برای rank score برابر با \(k+1\) است.
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-k = 10    => p_min ≈ 0.091
-k = 25    => p_min ≈ 0.038
-k = 50    => p_min ≈ 0.019
-k = 100   => p_min ≈ 0.0099
-k = 1000  => p_min ≈ 0.000999
-```
+| k | Minimum p-value | Number of rank levels |
+|---:|---:|---:|
+| 10 | 0.0909 | 11 |
+| 25 | 0.0385 | 26 |
+| 50 | 0.0196 | 51 |
+| 100 | 0.0099 | 101 |
+| 1000 | 0.0010 | 1001 |
 
 </div>
 
 <div dir="rtl" align="right">
 
-پس برای هدف‌های خیلی سخت مثل `FPR = 0.1%`، اگر بخواهیم p-value را مستقیم به عنوان آزمون آماری استفاده کنیم، به تعداد neighbour زیاد نیاز داریم.
-
-اما حتی با `k` کمتر، می‌توان `p(x)` یا `q(x)` را به عنوان یک ranking score استفاده کرد و بعد ROC/AUC و TPR@FPR را روی validation set محاسبه کرد.
+پس برای low-FPRهای بسیار شدید، مثل `0.1%` یا `0.01%`، تعداد neighbourها باید زیاد باشد. با این حال، حتی با \(k\) کمتر هم می‌توان quantile score را به عنوان ranking score استفاده کرد و ROC-AUC / PR-AUC را محاسبه کرد.
 
 ---
 
-## 10. تفاوت QN-MIA با ZN-MIA
-
-| ویژگی | ZN-MIA | QN-MIA |
-|---|---|---|
-| نوع calibration | mean + std | rank / quantile |
-| فرض آماری | semi-parametric | non-parametric |
-| حساسیت به outlier | متوسط | کمتر |
-| مناسب برای Low-FPR | خوب | بسیار خوب |
-| نیاز به neighbour زیاد | متوسط | زیادتر، مخصوصاً برای tail |
-| score اصلی | z-score | p-value یا quantile |
-
----
-
-## 11. الگوریتم QN-MIA
+## الگوریتم QN-MIA
 
 </div>
 
@@ -416,74 +317,30 @@ k = 1000  => p_min ≈ 0.000999
 
 ```text
 Input:
-    x: target text
-    T: target language model
-    M: mask-filling perturbation model
-    k: number of neighbours
-    alpha: membership threshold
+    x                  target text
+    T                  target language model
+    M                  mask-filling perturbation model
+    k                  number of neighbours
 
-Step 1: Generate neighbours
-    N(x) = {x'_1, ..., x'_k}
+Step 1:
+    Generate neighbours:
+        N(x) = {x'_1, ..., x'_k}
 
-Step 2: Compute log-likelihoods
-    ll_x = LL_T(x)
-    ll_i = LL_T(x'_i) for i = 1..k
+Step 2:
+    Compute log-likelihoods:
+        ll_x = LL_T(x)
+        ll_i = LL_T(x'_i), for i = 1..k
 
-Step 3: Compute empirical p-value
-    p = (1 + count(ll_i >= ll_x)) / (k + 1)
+Step 3:
+    Compute quantile score:
+        q = (1 + count_i[ll_i <= ll_x]) / (k + 1)
 
-Step 4: Membership decision
-    if p < alpha:
-        return member
-    else:
-        return non-member
-```
+Step 4:
+    Use q as membership score:
+        larger q => more member-like
 
-</div>
-
-<div dir="rtl" align="right">
-
-اگر به جای p-value از quantile score استفاده شود:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-q = (1 + count(ll_i <= ll_x)) / (k + 1)
-
-if q > tau:
-    return member
-else:
-    return non-member
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-در عمل برای ROC/AUC بهتر است یک score پیوسته ذخیره شود. برای p-value، چون مقدار کمتر یعنی member، می‌توان score را به شکل زیر ذخیره کرد:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-score = -p
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-یا:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-score = q
+Step 5:
+    Evaluate the attack using ROC-AUC, PR-AUC, and low-FPR TPR.
 ```
 
 </div>
@@ -492,76 +349,33 @@ score = q
 
 ---
 
-## 12. انتظار علمی از QN-MIA
+# نصب و آماده‌سازی محیط
 
-انتظار اصلی این نیست که QN-MIA الزاماً همیشه AUC را خیلی بهتر کند. انتظار مهم‌تر این است که در ناحیه‌ی Low-FPR عملکرد بهتری بدهد.
+## 1. ساخت محیط مجازی
 
-بنابراین claim مناسب برای این branch این است:
-
-> QN-MIA is designed to improve low-FPR membership inference by replacing mean/std-based neighbourhood scores with a rank-based non-parametric local test.
-
-نه اینکه بگوییم:
-
-> QN-MIA always improves all metrics.
-
-متریک‌های اصلی برای این branch باید این‌ها باشند:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-ROC-AUC
-PR-AUC
-TPR@5%FPR
-TPR@1%FPR
-TPR@0.1%FPR
-TPR@0.01%FPR
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
----
-
-## 13. ساختار پیشنهادی branch
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-QN-MIA/
-├── README.md
-├── QN-MIA.md
-├── run_mia_unified.py
-├── custom_datasets.py
-├── results/
-│   ├── qn_mia_n25.json
-│   ├── qn_mia_n50.json
-│   └── qn_mia_n100.json
-└── scripts/
-    ├── run_qn_mia_n25.sh
-    ├── run_qn_mia_n50.sh
-    └── run_qn_mia_n100.sh
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
----
-
-## 14. نحوه اجرای آزمایش‌ها
-
-### 14.1. فعال کردن محیط
+اگر از `venv` استفاده می‌کنید:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```bash
+python3 -m venv mia
+source mia/bin/activate
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر از `conda` استفاده می‌کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+conda create -n mia python=3.10 -y
 conda activate mia
 ```
 
@@ -569,167 +383,60 @@ conda activate mia
 
 <div dir="rtl" align="right">
 
-یا اگر از virtualenv استفاده می‌شود:
+## 2. نصب requirements
+
+اگر فایل `requirements.txt` در repo وجود دارد:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```bash
-source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-### 14.2. رفتن به branch مربوطه
+اگر بعضی packageها missing بودند، حداقل dependencyهای زیر را نصب کنید:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```bash
-git checkout QN-MIA
+pip install -U torch transformers datasets numpy scikit-learn matplotlib tqdm accelerate sentencepiece protobuf
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-### 14.3. اجرای آزمایش با 25 neighbour
+برای اطمینان از نصب packageهای اصلی:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```bash
-python run_mia_unified.py \
-  --output_name qn_mia_n25 \
-  --base_model_name distilgpt2 \
-  --mask_filling_model_name t5-small \
-  --n_perturbation_list 25 \
-  --n_samples 1000 \
-  --pct_words_masked 0.3 \
-  --span_length 2 \
-  --cache_dir cache \
-  --dataset_member the_pile \
-  --dataset_member_key text \
-  --dataset_nonmember xsum \
-  --max_length 2000
-```
+python - <<'PY'
+import torch
+import transformers
+import datasets
+import sklearn
+import numpy
+import matplotlib
 
-</div>
-
-<div dir="rtl" align="right">
-
-### 14.4. اجرای آزمایش با 50 neighbour
-
-</div>
-
-<div dir="ltr" align="left">
-
-```bash
-python run_mia_unified.py \
-  --output_name qn_mia_n50 \
-  --base_model_name distilgpt2 \
-  --mask_filling_model_name t5-small \
-  --n_perturbation_list 50 \
-  --n_samples 1000 \
-  --pct_words_masked 0.3 \
-  --span_length 2 \
-  --cache_dir cache \
-  --dataset_member the_pile \
-  --dataset_member_key text \
-  --dataset_nonmember xsum \
-  --max_length 2000
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-### 14.5. اجرای آزمایش با 100 neighbour
-
-</div>
-
-<div dir="ltr" align="left">
-
-```bash
-python run_mia_unified.py \
-  --output_name qn_mia_n100 \
-  --base_model_name distilgpt2 \
-  --mask_filling_model_name t5-small \
-  --n_perturbation_list 100 \
-  --n_samples 1000 \
-  --pct_words_masked 0.3 \
-  --span_length 2 \
-  --cache_dir cache \
-  --dataset_member the_pile \
-  --dataset_member_key text \
-  --dataset_nonmember xsum \
-  --max_length 2000
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-نکته: برای آزمایش نهایی بهتر است از مدل و تنظیمات اصلی پروژه استفاده شود، مثلاً GPT-Neo یا GPT-2 بزرگ‌تر و T5-large / T5-3B. اما برای تست سریع، `distilgpt2` و `t5-small` مناسب‌ترند.
-
----
-
-## 15. خروجی‌های مورد انتظار
-
-بعد از اجرا، باید فایل‌هایی شبیه این‌ها ساخته شوند:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-results/qn_mia_n25.json
-results/qn_mia_n50.json
-results/qn_mia_n100.json
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-داخل هر فایل باید حداقل این موارد وجود داشته باشد:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-metrics.roc_auc
-pr_metrics.pr_auc
-metrics.fpr
-metrics.tpr
-predictions.real
-predictions.samples
-raw_results
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-برای QN-MIA بهتر است علاوه بر score نهایی، این موارد نیز ذخیره شوند:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-original_ll
-perturbed_lls
-quantile_score
-empirical_p_value
-n_neighbours
-p_min
+print("torch:", torch.__version__)
+print("transformers:", transformers.__version__)
+print("datasets:", datasets.__version__)
+print("sklearn:", sklearn.__version__)
+print("numpy:", numpy.__version__)
+print("matplotlib:", matplotlib.__version__)
+print("CUDA available:", torch.cuda.is_available())
+PY
 ```
 
 </div>
@@ -738,9 +445,137 @@ p_min
 
 ---
 
-## 16. بررسی نتایج
+# فایل‌های مهم شاخه
 
-برای خواندن خلاصه نتایج:
+</div>
+
+<div dir="ltr" align="left">
+
+| File | Purpose |
+|---|---|
+| `Quantile_neighborhood_attack.py` | اسکریپت اصلی اجرای QN-MIA |
+| `run_mia_unified.py` | توابع مشترک برای load model، تولید neighbour، likelihood و metricها |
+| `custom_datasets.py` | dataset utilities |
+| `plot_curves.py` | استخراج ROC و PR curve از JSON خروجی |
+| `results/` | محل ذخیره نتایج |
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# Experimental Setup
+
+در آزمایش‌های فعلی QN-MIA، setup زیر استفاده شده است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Component | Value |
+|---|---|
+| Target model | `./ft_distilgpt2_highlights` |
+| Reference model | Not used |
+| Dataset | CNN/DailyMail v3.0.0 |
+| Member split | `train[:50000]`, field `highlights` |
+| Non-member split | `validation`, field `highlights` |
+| Number of member samples | 1000 |
+| Number of non-member samples | 1000 |
+| Mask-filling model | `t5-small` |
+| Mask percentage | `0.20` |
+| Span length | `1` |
+| Neighbours tested | `10`, `50` |
+| Criterion | `qn` |
+
+</div>
+
+<div dir="rtl" align="right">
+
+در این setup، target model قبلاً روی CNN/DailyMail highlights fine-tune شده است. بنابراین memberها از train split و non-memberها از validation split انتخاب می‌شوند.
+
+---
+
+# اجرای QN-MIA
+
+## اجرای QN-MIA با 10 همسایه و 1000 نمونه
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+rm -f results/qn_mia_n10.json
+
+HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 python Quantile_neighborhood_attack.py \
+  --cache_dir ./.hf_cache \
+  --dataset_member cnn_dailymail_highlights --dataset_member_key highlights \
+  --dataset_nonmember cnn_dailymail_highlights --dataset_nonmember_key highlights \
+  --mask_filling_model_name t5-small \
+  --pct_words_masked 0.20 \
+  --span_length 1 \
+  --n_perturbations 10 \
+  --n_samples 1000 \
+  --batch_size 50 \
+  --chunk_size 20 \
+  --base_model_name "$(realpath ./ft_distilgpt2_highlights)" \
+  --criterion qn \
+  --save_path results/qn_mia_n10.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+## اجرای QN-MIA با 50 همسایه و 1000 نمونه
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+rm -f results/qn_mia_n50.json
+
+HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 python Quantile_neighborhood_attack.py \
+  --cache_dir ./.hf_cache \
+  --dataset_member cnn_dailymail_highlights --dataset_member_key highlights \
+  --dataset_nonmember cnn_dailymail_highlights --dataset_nonmember_key highlights \
+  --mask_filling_model_name t5-small \
+  --pct_words_masked 0.20 \
+  --span_length 1 \
+  --n_perturbations 50 \
+  --n_samples 1000 \
+  --batch_size 50 \
+  --chunk_size 20 \
+  --base_model_name "$(realpath ./ft_distilgpt2_highlights)" \
+  --criterion qn \
+  --save_path results/qn_mia_n50.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر CUDA memory کم بود، مقدارهای زیر را کوچک‌تر کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+--batch_size 25 \
+--chunk_size 10
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# استخراج metricها از فایل خروجی
+
+برای استخراج ROC-AUC، PR-AUC و TPR در FPRهای پایین:
 
 </div>
 
@@ -751,7 +586,7 @@ python - <<'PY'
 import json
 import numpy as np
 
-p = "results/qn_mia_n100.json"
+p = "results/qn_mia_n50.json"
 d = json.load(open(p))
 
 if isinstance(d, list):
@@ -767,9 +602,11 @@ def tpr_at(alpha):
 print("file:", p)
 print("name:", d.get("name"))
 print("criterion:", d.get("criterion"))
+print("num_real:", len(d["predictions"]["real"]))
+print("num_samples:", len(d["predictions"]["samples"]))
+print("raw_results:", len(d.get("raw_results", [])))
 print("roc_auc:", d["metrics"]["roc_auc"])
 print("pr_auc:", d["pr_metrics"]["pr_auc"])
-print("TPR@5%FPR:", tpr_at(0.05))
 print("TPR@1%FPR:", tpr_at(0.01))
 print("TPR@0.1%FPR:", tpr_at(0.001))
 print("TPR@0.01%FPR:", tpr_at(0.0001))
@@ -782,28 +619,155 @@ PY
 
 ---
 
-## 17. مقایسه با baselineها
+# استخراج نمودارهای ROC و PR
 
-QN-MIA باید حداقل با این روش‌ها مقایسه شود:
-
-1. **LOSS Attack**
-2. **N-MIA / d-score**
-3. **ZN-MIA / z-score**
-4. **QN-MIA / quantile or p-value**
-
-جدول پیشنهادی:
+برای تولید دو نمودار زیر:
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-| Attack | AUC | PR-AUC | TPR@5%FPR | TPR@1%FPR | TPR@0.1%FPR |
-|--------|-----|--------|-----------|-----------|-------------|
-| LOSS   |     |        |           |           |             |
-| N-MIA  |     |        |           |           |             |
-| ZN-MIA |     |        |           |           |             |
-| QN-MIA |     |        |           |           |             |
+roc_curve.png
+pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+ابتدا فایل `plot_curves.py` را در ریشه پروژه بسازید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```python
+import os
+import json
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def load_result(path):
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if isinstance(data, list):
+        data = data[0]
+
+    return data
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--result_json",
+        type=str,
+        required=True,
+        help="Path to result JSON file"
+    )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help="Directory to save roc_curve.png and pr_curve.png"
+    )
+
+    args = parser.parse_args()
+
+    d = load_result(args.result_json)
+
+    out_dir = args.out_dir or os.path.dirname(args.result_json)
+    os.makedirs(out_dir, exist_ok=True)
+
+    name = d.get("name", "MIA_Result")
+
+    # ROC curve
+    fpr = np.array(d["metrics"]["fpr"], dtype=float)
+    tpr = np.array(d["metrics"]["tpr"], dtype=float)
+    roc_auc = float(d["metrics"]["roc_auc"])
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(fpr, tpr, label=f"{name} (ROC-AUC = {roc_auc:.4f})")
+    plt.plot([0, 1], [0, 1], linestyle="--", label="Random baseline")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve - {name}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, "roc_curve.png"), dpi=200)
+    plt.close()
+
+    # Precision-Recall curve
+    recall = np.array(d["pr_metrics"]["recall"], dtype=float)
+    precision = np.array(d["pr_metrics"]["precision"], dtype=float)
+    pr_auc = float(d["pr_metrics"]["pr_auc"])
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(recall, precision, label=f"{name} (PR-AUC = {pr_auc:.4f})")
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title(f"Precision-Recall Curve - {name}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, "pr_curve.png"), dpi=200)
+    plt.close()
+
+    print("Saved:", os.path.join(out_dir, "roc_curve.png"))
+    print("Saved:", os.path.join(out_dir, "pr_curve.png"))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+برای QN-MIA با 50 همسایه:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python plot_curves.py \
+  --result_json results/qn_mia_n50.json \
+  --out_dir results/qn_mia_n50_plots
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+خروجی:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/qn_mia_n50_plots/roc_curve.png
+results/qn_mia_n50_plots/pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+برای QN-MIA با 10 همسایه:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python plot_curves.py \
+  --result_json results/qn_mia_n10.json \
+  --out_dir results/qn_mia_n10_plots
 ```
 
 </div>
@@ -812,59 +776,33 @@ QN-MIA باید حداقل با این روش‌ها مقایسه شود:
 
 ---
 
-## 18. Ablationهای مهم
+# نتایج QN-MIA
 
-برای اینکه QN-MIA در پایان‌نامه قابل دفاع باشد، این ablationها مهم هستند:
-
-### 18.1. اثر تعداد neighbourها
+نتایج معتبر با 1000 member و 1000 non-member:
 
 </div>
 
 <div dir="ltr" align="left">
 
-```text
-k = 10, 25, 50, 100, 200
-```
+| Method | k | Samples | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR | TPR@0.01%FPR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| QN-MIA | 10 | 1000 | 0.509758 | 0.543458 | 0.00% | 0.00% | 0.00% |
+| QN-MIA | 50 | 1000 | 0.551854 | 0.539276 | 1.00% | 0.00% | 0.00% |
 
 </div>
 
 <div dir="rtl" align="right">
 
-انتظار:
-
-- با افزایش `k`، empirical p-value دقیق‌تر می‌شود.
-- TPR@low-FPR باید بهتر یا پایدارتر شود.
-- هزینه محاسباتی افزایش می‌یابد.
-
-### 18.2. اثر نوع score
-
-مقایسه:
+افزایش تعداد neighbourها از 10 به 50 باعث شد ROC-AUC بهتر شود و TPR@1%FPR از صفر به 1.00% برسد، اما PR-AUC کاهش کمی داشت.
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-p-value score:  -p(x)
-quantile score: q(x)
-raw rank score
-```
-
-</div>
-
-<div dir="rtl" align="right">
-
-### 18.3. اثر perturbation quality
-
-مقایسه‌ی پارامترها:
-
-</div>
-
-<div dir="ltr" align="left">
-
-```text
-pct_words_masked = 0.15, 0.30, 0.45
-span_length      = 1, 2, 4
+ROC-AUC gain = 0.551854 - 0.509758 = +0.042096
+PR-AUC change = 0.539276 - 0.543458 = -0.004182
+TPR@1%FPR increased from 0.00% to 1.00%
 ```
 
 </div>
@@ -873,64 +811,232 @@ span_length      = 1, 2, 4
 
 ---
 
-## 19. محدودیت‌ها
+# مقایسه با Original، ZN، RN و RRN
+
+جدول زیر نتایج فعلی روش‌های مختلف را نشان می‌دهد:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Samples | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR | TPR@0.01%FPR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Original Neighbourhood | 10 | 1000 | 0.591787 | 0.569768 | 1.10% | 0.00% | 0.00% |
+| ZN-MIA | 10 | 1000 | 0.587588 | 0.567956 | 1.70% | 0.10% | 0.10% |
+| RN-MIA | 10 | 1000 | 0.654651 | 0.623765 | 1.70% | 0.00% | 0.00% |
+| QN-MIA | 10 | 1000 | 0.509758 | 0.543458 | 0.00% | 0.00% | 0.00% |
+| QN-MIA | 50 | 1000 | 0.551854 | 0.539276 | 1.00% | 0.00% | 0.00% |
+| RRN-MIA | 10 | 1000 | 0.657015 | 0.677290 | 0.00% | 0.00% | 0.00% |
+| RRN-MIA | 50 | 1000 | **0.692407** | **0.711859** | **8.20%** | **1.80%** | **0.00%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+## مقایسه QN-MIA با Original Neighbourhood Attack
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | ROC-AUC | PR-AUC | TPR@1%FPR |
+|---|---:|---:|---:|---:|
+| Original Neighbourhood | 10 | **0.591787** | **0.569768** | **1.10%** |
+| QN-MIA | 10 | 0.509758 | 0.543458 | 0.00% |
+| QN-MIA | 50 | 0.551854 | 0.539276 | 1.00% |
+
+</div>
+
+<div dir="rtl" align="right">
+
+در این setup، QN-MIA از Original ضعیف‌تر است. دلیل اصلی این است که QN-MIA فقط rank را نگه می‌دارد و magnitude اختلاف likelihood را از دست می‌دهد. در حالی که Original از مقدار واقعی اختلاف با میانگین neighbourها استفاده می‌کند.
+
+---
+
+## مقایسه QN-MIA با ZN-MIA
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR |
+|---|---:|---:|---:|---:|---:|
+| ZN-MIA | 10 | **0.587588** | **0.567956** | **1.70%** | **0.10%** |
+| QN-MIA | 10 | 0.509758 | 0.543458 | 0.00% | 0.00% |
+| QN-MIA | 50 | 0.551854 | 0.539276 | 1.00% | 0.00% |
+
+</div>
+
+<div dir="rtl" align="right">
+
+ZN-MIA در نتایج فعلی بهتر از QN-MIA است. این نشان می‌دهد که در این setup، حفظ magnitude اختلاف likelihood و normalize کردن آن با variance محلی مفیدتر از rank-only scoring بوده است.
+
+---
+
+## مقایسه QN-MIA با RN-MIA
+
+RN-MIA از reference model استفاده می‌کند و اثرهای عمومی متن را حذف می‌کند. QN-MIA reference model ندارد و فقط rank متن را در neighbourhood target model می‌سنجد.
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Reference model | ROC-AUC | PR-AUC | TPR@1%FPR |
+|---|---:|---|---:|---:|---:|
+| QN-MIA | 50 | No | 0.551854 | 0.539276 | 1.00% |
+| RN-MIA | 10 | Yes, `distilgpt2` | **0.654651** | **0.623765** | **1.70%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+RN-MIA به‌وضوح از QN-MIA بهتر عمل کرده است. این نشان می‌دهد که در این dataset، حذف generic text difficulty با reference model مهم‌تر از rank-only normalization بوده است.
+
+---
+
+## مقایسه QN-MIA با RRN-MIA
+
+RRN-MIA ترکیب دو ایده است:
+
+- residual calibration از RN-MIA
+- rank-based local testing از QN-MIA
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Reference model | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR |
+|---|---:|---|---:|---:|---:|---:|
+| QN-MIA | 50 | No | 0.551854 | 0.539276 | 1.00% | 0.00% |
+| RRN-MIA | 50 | Yes, `distilgpt2` | **0.692407** | **0.711859** | **8.20%** | **1.80%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+این مقایسه نشان می‌دهد که rank-based testing به تنهایی کافی نبود، اما وقتی همین ایده با residual calibration ترکیب شد، نتیجه‌ی بسیار قوی‌تری به دست آمد.
+
+---
+
+# تحلیل نتایج
+
+در این setup، QN-MIA به عنوان یک روش rank-based ساده عملکرد محدودی داشت:
+
+- با \(k=10\)، ROC-AUC تقریباً نزدیک random بود.
+- با \(k=50\)، ROC-AUC بهتر شد، اما هنوز از Original و ZN-MIA پایین‌تر ماند.
+- TPR@1%FPR با \(k=50\) به 1.00% رسید.
+- در FPRهای پایین‌تر، نتیجه صفر باقی ماند.
+
+این نشان می‌دهد که QN-MIA از نظر مفهومی مهم است، اما rank-only scoring ممکن است برای این setup کافی نباشد. ارزش اصلی QN-MIA در این پروژه این است که پایه‌ی روش قوی‌تر **RRN-MIA** را فراهم کرد.
+
+---
+
+# چرا QN-MIA در این setup ضعیف‌تر بود؟
+
+چند دلیل محتمل:
+
+1. با rank-only scoring، magnitude اختلاف likelihood از بین می‌رود.
+2. با \(k=10\)، فقط 11 سطح score ممکن است.
+3. حتی با \(k=50\)، score هنوز گسسته است.
+4. perturbationهای T5 ممکن است کیفیت متفاوتی داشته باشند و rank را noisy کنند.
+5. QN-MIA generic difficulty متن را مثل RN-MIA حذف نمی‌کند.
+6. CNN/DailyMail highlights متن‌های کوتاه و خلاصه هستند؛ rank-only signal ممکن است در این نوع متن‌ها ضعیف‌تر باشد.
+
+---
+
+# چرا QN-MIA همچنان مهم است؟
+
+اگرچه QN-MIA در نتایج نهایی بهترین روش نبود، از نظر علمی مهم است، چون نشان می‌دهد:
+
+- فقط rank-based کردن Neighbourhood Attack کافی نیست.
+- تعداد neighbourها برای روش‌های rank-based بسیار مهم است.
+- ترکیب rank با residual calibration می‌تواند بسیار قوی‌تر باشد.
+- QN-MIA به عنوان ablation نشان می‌دهد که بهبود RRN-MIA فقط به خاطر rank نیست، بلکه به خاطر ترکیب rank و reference-based residualization است.
+
+---
+
+# Expected Outputs
+
+بعد از اجرای موفق QN-MIA، فایل‌های زیر ساخته می‌شوند:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/qn_mia_n10.json
+results/qn_mia_n50.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+بعد از اجرای `plot_curves.py`:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/qn_mia_n10_plots/roc_curve.png
+results/qn_mia_n10_plots/pr_curve.png
+
+results/qn_mia_n50_plots/roc_curve.png
+results/qn_mia_n50_plots/pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# Limitations
 
 QN-MIA چند محدودیت مهم دارد:
 
 1. برای p-valueهای خیلی کوچک به neighbour زیاد نیاز دارد.
-2. اگر neighbourها کیفیت بدی داشته باشند، rank نیز گمراه‌کننده می‌شود.
-3. اگر همه‌ی neighbourها خیلی شبیه متن اصلی باشند و log-likelihoodها تقریباً برابر شوند، rank signal ضعیف می‌شود.
-4. empirical p-value از نظر آماری فقط وقتی کاملاً معتبر است که neighbourها exchangeable و representative باشند؛ در عمل این فرض تقریباً برقرار است، نه دقیقاً.
-
-پس در پایان‌نامه بهتر است این روش را به عنوان یک **rank-based local evidence score** معرفی کنیم، نه به عنوان p-value کاملاً rigorous.
+2. با تعداد neighbour کم، score resolution محدود است.
+3. rank-only scoring مقدار واقعی اختلاف likelihood را حذف می‌کند.
+4. اگر neighbourها کیفیت بدی داشته باشند، rank نیز گمراه‌کننده می‌شود.
+5. این روش generic difficulty را مثل RN-MIA با reference model حذف نمی‌کند.
+6. برای این setup، QN-MIA نسبت به Original، ZN، RN و RRN ضعیف‌تر بود.
+7. empirical p-value از نظر آماری فقط وقتی کاملاً معتبر است که neighbourها exchangeable و representative باشند؛ در عمل این فرض تقریباً برقرار است، نه دقیقاً.
 
 ---
 
-## 20. جایگاه QN-MIA در خانواده حملات پروژه
+#  Summary
 
 </div>
 
 <div dir="ltr" align="left">
 
 ```text
-N-MIA
-│
-├── ZN-MIA   -> mean + std normalization
-│
-├── RN-MIA   -> target gap - reference gap
-│
-├── QN-MIA   -> rank / quantile / p-value local test
-│
-└── RRN-MIA  -> residual + rank-based local test
+QN-MIA replaces mean- or variance-based neighbourhood scores with a non-parametric rank-based local test. In the 1000-sample CNN/DailyMail highlights evaluation, QN-MIA achieved ROC-AUC 0.5098 with 10 neighbours and 0.5519 with 50 neighbours. Increasing the number of neighbours improved ROC-AUC and enabled non-zero TPR@1%FPR, but QN-MIA remained weaker than the original neighbourhood baseline and the residualized variants. These results suggest that rank-based neighbourhood evidence alone is insufficient in this setup, but it provides an important ablation and motivates the stronger RRN-MIA method, where rank-based testing is applied to target-reference residual likelihoods.
 ```
 
 </div>
 
 <div dir="rtl" align="right">
 
-QN-MIA از نظر مفهومی یک گام مهم است، چون حمله را از score عددی ساده به سمت **local hypothesis testing** می‌برد.
-
 ---
 
-## 21. خلاصه نهایی
+# خلاصه نهایی
 
-QN-MIA یک extension از Neighbourhood Attack است که به جای مقایسه‌ی متن اصلی با mean یا std neighbourها، جایگاه نسبی متن اصلی را در توزیع neighbourهای خودش بررسی می‌کند.
+QN-MIA یک extension غیرپارامتری از Neighbourhood Attack است که به جای مقایسه‌ی متن اصلی با mean یا std neighbourها، جایگاه نسبی متن اصلی را در توزیع neighbourهای خودش بررسی می‌کند.
 
 ایده اصلی:
 
 > اگر target model متن اصلی را بهتر از تقریباً همه‌ی neighbourهایش بشناسد، این یک شواهد قوی برای membership است.
 
-مزیت اصلی:
+در آزمایش‌های فعلی، QN-MIA بهترین روش نبود، اما نقش مهمی در تحلیل دارد:
 
-- non-parametric
-- مقاوم‌تر نسبت به outlier
-- مناسب‌تر برای Low-FPR
-- نزدیک‌تر به hypothesis testing framework
-
-محدودیت اصلی:
-
-- نیاز به neighbourهای زیاد برای p-valueهای خیلی کوچک
-
-بنابراین QN-MIA یک روش مناسب برای مرحله‌ی دوم بهبودهاست و می‌تواند پایه‌ی variant قوی‌تر بعدی، یعنی **RRN-MIA**، باشد.
+- نشان داد rank-only scoring به تنهایی کافی نیست.
+- نشان داد تعداد neighbourها برای روش‌های rank-based مهم است.
+- پایه‌ی مفهومی RRN-MIA را فراهم کرد.
+- به عنوان ablation نشان داد که قدرت RRN-MIA از ترکیب rank و residual calibration می‌آید، نه فقط از rank.
 
 </div>
