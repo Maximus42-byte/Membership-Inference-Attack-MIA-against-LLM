@@ -2,212 +2,132 @@
 
 # RN-MIA: Residual Neighbourhood Membership Inference Attack
 
-## نام شاخه
+## خلاصه کوتاه
+
+**RN-MIA** یا **Residual Neighbourhood Membership Inference Attack** یک extension مستقیم از حمله‌ی اصلی **Neighbourhood Attack** است.
+
+حمله‌ی اصلی برای هر متن \(x\)، متن اصلی را با neighbourهای خودش مقایسه می‌کند و بررسی می‌کند که آیا target model متن اصلی را بهتر از perturbationهای مشابهش می‌شناسد یا نه. اما این سیگنال همیشه membership نیست؛ گاهی متن اصلی ذاتاً طبیعی‌تر، روان‌تر یا ساده‌تر از neighbourهای تولیدشده است و حتی یک مدل عمومی نیز آن را بهتر score می‌دهد.
+
+RN-MIA برای حل این مشکل، یک **reference model** کوچک و عمومی اضافه می‌کند. سپس advantage متن اصلی در target model را با advantage همان متن در reference model مقایسه می‌کند.
+
+به زبان ساده:
+
+</div>
 
 <div dir="ltr" align="left">
 
 ```text
-RN-MIA
+N-MIA  : Does the target model prefer the original text over its neighbours?
+RN-MIA : Is this preference specific to the target model?
 ```
 
 </div>
 
-## نام کامل پیشنهادی
+<div dir="rtl" align="right">
 
-**Residual Neighbourhood Membership Inference Attack**
-
-یا به فارسی:
-
-**حمله‌ی استنتاج عضویت مبتنی بر باقیمانده‌ی همسایگی**
+اگر target model متن اصلی را نسبت به neighbourها بهتر بداند، اما reference model چنین advantageای نداشته باشد، این سیگنال target-specificتر و membership-likeتر است.
 
 ---
 
-## 1. ایده‌ی اصلی
-
-حمله‌ی **RN-MIA** یک توسعه‌ی مستقیم روی حمله‌ی پایه‌ی **Neighbourhood Attack** است.
-
-در حمله‌ی اولیه، برای هر متن هدف \(x\)، چند متن مشابه یا neighbour ساخته می‌شود. سپس مدل هدف روی متن اصلی و neighbourها ارزیابی می‌شود. اگر مدل هدف متن اصلی را به‌طور غیرعادی بهتر از neighbourها بشناسد، آن متن مشکوک به membership در training set است.
-
-اما مشکل این است که گاهی متن اصلی نسبت به neighbourها بهتر score می‌گیرد، نه به خاطر اینکه member بوده، بلکه چون خود متن ذاتاً طبیعی‌تر، رایج‌تر، ساده‌تر یا کمتر noisy از perturbationهای ساخته‌شده است.
-
-در **RN-MIA** یک مدل مرجع کوچک و عمومی اضافه می‌کنیم تا این اثرهای عمومی زبان را حذف کنیم.
-
-ایده‌ی مرکزی این است:
-
-> اگر هم مدل هدف و هم یک مدل مرجع عمومی متن اصلی را نسبت به neighbourها بهتر بدانند، احتمالاً این برتری از خود متن یا از artifact تولید neighbourها آمده است. اما اگر فقط مدل هدف چنین برتری‌ای نشان دهد، سیگنال بیشتر target-specific و membership-like است.
-
----
-
-## 2. تفاوت با Neighbourhood Attack اولیه
-
-حمله‌ی اولیه فقط این سؤال را می‌پرسد:
-
-> آیا target model متن اصلی را نسبت به neighbourهای خودش بهتر score می‌دهد؟
-
-اما **RN-MIA** سؤال دقیق‌تری می‌پرسد:
-
-> آیا target model متن اصلی را نسبت به neighbourهای خودش بیشتر از یک reference model عمومی بهتر score می‌دهد؟
-
-پس RN-MIA از یک ساختار **difference-of-differences** استفاده می‌کند.
-
----
-
-## 3. فرمول حمله‌ی پایه
-
-در نسخه‌ی log-likelihood، حمله‌ی پایه‌ی neighbourhood برای مدل هدف به شکل زیر است:
-
-<div dir="ltr" align="left">
-
-$$
-G_T(x) = LL_T(x) - \frac{1}{k}\sum_{i=1}^{k} LL_T(x'_i)
-$$
+## جایگاه RN-MIA در خانواده حملات
 
 </div>
-
-که در آن:
-
-- \(x\): متن اصلی
-- \(x'_i\): neighbour شماره‌ی \(i\)
-- \(k\): تعداد neighbourها
-- \(LL_T(x)\): log-likelihood متن اصلی زیر target model
-- \(G_T(x)\): neighbourhood gap برای target model
-
-اگر \(G_T(x)\) بزرگ باشد، یعنی target model متن اصلی را بهتر از neighbourها می‌شناسد.
-
----
-
-## 4. اضافه‌ی RN-MIA نسبت به حمله‌ی اولیه
-
-در RN-MIA همان neighbourhood gap را برای یک مدل مرجع کوچک نیز محاسبه می‌کنیم:
-
-<div dir="ltr" align="left">
-
-$$
-G_R(x) = LL_R(x) - \frac{1}{k}\sum_{i=1}^{k} LL_R(x'_i)
-$$
-
-</div>
-
-که در آن:
-
-- \(R\): reference model
-- \(LL_R(x)\): log-likelihood متن زیر reference model
-- \(G_R(x)\): neighbourhood gap برای reference model
-
-سپس score نهایی RN-MIA به صورت residual تعریف می‌شود:
-
-<div dir="ltr" align="left">
-
-$$
-S_{RN}(x) = G_T(x) - G_R(x)
-$$
-
-</div>
-
-یعنی:
-
-<div dir="ltr" align="left">
-
-$$
-S_{RN}(x)
-=
-\left(LL_T(x)-\frac{1}{k}\sum_i LL_T(x'_i)\right)
--
-\left(LL_R(x)-\frac{1}{k}\sum_i LL_R(x'_i)\right)
-$$
-
-</div>
-
----
-
-## 5. تفسیر score
-
-اگر با log-likelihood کار کنیم:
-
-- مقدار بزرگ‌تر \(G_T(x)\) یعنی target model متن اصلی را نسبت به neighbours بهتر می‌شناسد.
-- مقدار بزرگ‌تر \(G_R(x)\) یعنی reference model هم همین برتری را می‌بیند.
-- مقدار بزرگ‌تر \(S_{RN}(x)\) یعنی این برتری بیشتر مخصوص target model است.
-
-پس:
 
 <div dir="ltr" align="left">
 
 ```text
-large S_RN(x)  -> stronger membership evidence
-small S_RN(x)  -> weaker membership evidence
+N-MIA   = Original Neighbourhood Attack
+ZN-MIA  = Z-score Neighbourhood Attack
+RN-MIA  = Residual Neighbourhood Attack
+QN-MIA  = Quantile / Rank Neighbourhood Attack
+RRN-MIA = Residual Rank Neighbourhood Attack
 ```
 
 </div>
 
-اگر با loss کار شود، جهت علامت برعکس می‌شود. در این documentation فرض می‌کنیم scoreها بر اساس log-likelihood هستند.
+<div dir="rtl" align="right">
+
+RN-MIA یک گام مهم از **local difficulty calibration** به سمت **target-specific local membership evidence** است. این روش از rank استفاده نمی‌کند، اما با reference model تلاش می‌کند اثرهای عمومی زبان و artifactهای مشترک بین مدل‌ها را حذف کند.
 
 ---
 
-## 6. intuition علمی
+## حمله اولیه Neighbourhood Attack
 
-حمله‌ی اولیه‌ی neighbourhood یک calibration محلی انجام می‌دهد، چون متن اصلی را با همسایه‌های خودش مقایسه می‌کند.
-
-اما این calibration هنوز کامل نیست. علت این است که neighbourها ممکن است از متن اصلی کمی بدتر، غیرطبیعی‌تر یا semantically shifted باشند. در چنین حالتی، حتی یک non-member هم می‌تواند نسبت به neighbourهایش بهتر score بگیرد.
-
-RN-MIA برای کنترل این مشکل از یک reference model استفاده می‌کند.
-
-reference model در اینجا قرار نیست شبیه target model باشد. نقش آن این نیست که training distribution هدف را بازسازی کند. نقش آن این است که یک **generic language difficulty meter** باشد.
-
-یعنی کمک می‌کند بفهمیم:
-
-> آیا local advantage متن اصلی یک ویژگی عمومی زبان است یا یک اثر خاص target model؟
-
-اگر هر دو مدل، target و reference، متن اصلی را نسبت به neighbourها بهتر بدانند، این رفتار احتمالاً به membership مربوط نیست. اما اگر target model gap بزرگی داشته باشد و reference model gap کوچکی داشته باشد، این تفاوت می‌تواند نشانه‌ی memorization یا target-specific overfitting باشد.
-
----
-
-## 7. چرا reference model باید کوچک و عمومی باشد؟
-
-در RN-MIA، reference model نباید مثل LiRA یک مدل مرجع نزدیک به target distribution باشد.
-
-در LiRA معمولاً reference model باید تا حد ممکن رفتار مدل هدف را در حالت non-member تقریب بزند. این کار نیازمند داده‌ی مشابه training distribution است و در بسیاری از سناریوهای privacy realistic نیست.
-
-اما در RN-MIA، reference model فقط نقش کنترل عمومی دارد.
-
-ویژگی‌های مطلوب reference model:
-
-- کوچک باشد.
-- عمومی باشد.
-- public باشد.
-- روی داده‌ی private هدف fine-tune نشده باشد.
-- هزینه‌ی inference پایینی داشته باشد.
-- بتواند fluency و difficulty عمومی متن را تقریب بزند.
-
-نمونه‌های مناسب:
-
-<div dir="ltr" align="left">
-
-```text
-distilgpt2
-gpt2
-EleutherAI/gpt-neo-125M
-facebook/opt-125m
-```
+در حمله‌ی اصلی، برای هر متن هدف \(x\)، یک مجموعه از neighbourها ساخته می‌شود:
 
 </div>
-
----
-
-## 8. مقایسه با ZN-MIA
-
-در **ZN-MIA** score به صورت زیر بود:
 
 <div dir="ltr" align="left">
 
 $$
-Z_T(x)=\frac{G_T(x)}{\sigma_T(N(x))}
+N(x)=\{x'_1,x'_2,\dots,x'_k\}
 $$
 
 </div>
 
-یعنی فقط gap مدل هدف با پراکندگی neighbourهای همان مدل normalize می‌شود.
+<div dir="rtl" align="right">
 
-اما در **RN-MIA**:
+در پیاده‌سازی ما، neighbourها با **span masking + T5 mask filling** ساخته می‌شوند:
+
+1. چند span از متن اصلی mask می‌شود.
+2. مدل mask-filling مثل T5 قسمت‌های mask شده را پر می‌کند.
+3. \(k\) متن perturb شده ساخته می‌شود.
+
+سپس target model روی متن اصلی و neighbourها ارزیابی می‌شود:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+LL_T(x), \quad LL_T(x'_1), \dots, LL_T(x'_k)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+در حمله‌ی اصلی، neighbourhood gap برای target model به شکل زیر است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+G_T(x)=LL_T(x)-\frac{1}{k}\sum_{i=1}^{k}LL_T(x'_i)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر \(G_T(x)\) بزرگ باشد، یعنی target model متن اصلی را نسبت به neighbourهایش بهتر می‌شناسد. این می‌تواند نشانه‌ی membership باشد.
+
+اما مشکل این است که گاهی این advantage به خاطر memorization نیست، بلکه به خاطر طبیعی‌تر بودن متن اصلی نسبت به perturbationهاست.
+
+---
+
+## ایده اصلی RN-MIA
+
+RN-MIA یک reference model کوچک و عمومی اضافه می‌کند. این reference model نباید روی training data خصوصی target fine-tune شده باشد. نقش آن این است که یک **generic language difficulty meter** باشد.
+
+برای reference model نیز همان neighbourhood gap را محاسبه می‌کنیم:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+G_R(x)=LL_R(x)-\frac{1}{k}\sum_{i=1}^{k}LL_R(x'_i)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+سپس RN-MIA score به شکل residual تعریف می‌شود:
+
+</div>
 
 <div dir="ltr" align="left">
 
@@ -217,365 +137,1034 @@ $$
 
 </div>
 
-یعنی سیگنال عمومی زبان یا perturbation artifact که reference model هم می‌بیند، از score مدل هدف حذف می‌شود.
+<div dir="rtl" align="right">
 
-پس تفاوت اصلی:
+یعنی:
 
-| روش | چه چیزی را کنترل می‌کند؟ |
-|---|---|
-| ZN-MIA | variance محلی neighbourها |
-| RN-MIA | difficulty عمومی متن و artifactهای مشترک بین مدل‌ها |
-
----
-
-## 9. تصمیم عضویت
-
-پس از محاسبه‌ی \(S_{RN}(x)\)، یک threshold روی validation set انتخاب می‌شود.
+</div>
 
 <div dir="ltr" align="left">
 
 $$
-A(x)=\mathbf{1}[S_{RN}(x)>\gamma]
+S_{RN}(x)=
+\left(LL_T(x)-\frac{1}{k}\sum_i LL_T(x'_i)\right)
+-
+\left(LL_R(x)-\frac{1}{k}\sum_i LL_R(x'_i)\right)
 $$
 
 </div>
 
-که در آن:
+<div dir="rtl" align="right">
 
-- \(A(x)=1\): متن به عنوان member تشخیص داده می‌شود.
-- \(A(x)=0\): متن به عنوان non-member تشخیص داده می‌شود.
-- \(\gamma\): threshold انتخاب‌شده بر اساس validation set یا target FPR.
+اگر \(S_{RN}(x)\) بزرگ باشد، یعنی local advantage متن اصلی بیشتر مخصوص target model است و احتمال membership بیشتر می‌شود.
 
-برای ارزیابی Low-FPR معمولاً threshold طوری انتخاب می‌شود که FPR برابر مقدارهای زیر باشد:
+---
+
+## فرم معادل پیاده‌سازی‌شده
+
+در پیاده‌سازی branch RN-MIA، تابع `get_ll` به صورت monkey-patch تغییر می‌کند تا به جای log-likelihood خام، residual log-likelihood را برگرداند:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+\Delta LL(y)=LL_T(y)-LL_R(y)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+سپس همان criterion داخلی `d` از کد اصلی استفاده می‌شود:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+d_{\Delta}(x)=
+\Delta LL(x)-\frac{1}{k}\sum_{i=1}^{k}\Delta LL(x'_i)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+که دقیقاً معادل RN-MIA است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+d_{\Delta}(x)=
+\left(LL_T(x)-\frac{1}{k}\sum_iLL_T(x'_i)\right)
+-
+\left(LL_R(x)-\frac{1}{k}\sum_iLL_R(x'_i)\right)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+بنابراین اگر در logها یا خروجی داخلی اسم criterion برابر `d` دیده شود، به این معنی نیست که حمله original اجرا شده است. در RN-MIA، `d` روی residual likelihood اجرا می‌شود.
+
+---
+
+## تفسیر score
+
+با log-likelihood کار می‌کنیم، بنابراین مقدار بزرگ‌تر بهتر است:
+
+- \(G_T(x)\) بزرگ: target model متن اصلی را نسبت به neighbourها بهتر می‌شناسد.
+- \(G_R(x)\) بزرگ: reference model هم همین advantage را می‌بیند.
+- \(S_{RN}(x)\) بزرگ: advantage بیشتر مخصوص target model است.
+
+پس:
+
+</div>
 
 <div dir="ltr" align="left">
 
 ```text
-FPR = 5%
-FPR = 1%
-FPR = 0.1%
-FPR = 0.01%
+large S_RN(x)  => stronger membership evidence
+small S_RN(x)  => weaker membership evidence
 ```
 
 </div>
+
+<div dir="rtl" align="right">
+
+اگر با loss کار شود، جهت علامت برعکس می‌شود. در این documentation فرض می‌کنیم scoreها بر اساس log-likelihood هستند.
 
 ---
 
-## 10. pseudo-code
+## چرا reference model لازم است؟
 
-<div dir="ltr" align="left">
+در Neighbourhood Attack اولیه، متن اصلی ممکن است از neighbourها بهتر score بگیرد چون:
 
-```python
-# RN-MIA pseudo-code
+- متن اصلی طبیعی‌تر از perturbationهای T5 است.
+- neighbourها کمی semantic shift دارند.
+- متن اصلی ساده‌تر یا رایج‌تر است.
+- perturbationها artifact زبانی دارند.
+- local neighbourhood noisy است.
 
-for x in target_samples:
-    neighbours = generate_neighbours(x, k)
-
-    # Target model scores
-    LL_T_x = log_likelihood(target_model, x)
-    LL_T_neigh = [log_likelihood(target_model, n) for n in neighbours]
-    G_T = LL_T_x - mean(LL_T_neigh)
-
-    # Reference model scores
-    LL_R_x = log_likelihood(reference_model, x)
-    LL_R_neigh = [log_likelihood(reference_model, n) for n in neighbours]
-    G_R = LL_R_x - mean(LL_R_neigh)
-
-    # Residual neighbourhood score
-    S_RN = G_T - G_R
-
-    prediction_score[x] = S_RN
-```
-
-</div>
+اگر این advantage برای reference model نیز وجود داشته باشد، احتمالاً advantage مربوط به خود متن یا perturbation artifact است، نه membership. RN-MIA این بخش مشترک را حذف می‌کند.
 
 ---
 
-## 11. مراحل اجرای آزمایش
+## چرا reference model باید کوچک و عمومی باشد؟
 
-### 11.1. رفتن به branch مربوطه
+reference model در RN-MIA قرار نیست یک shadow model دقیق مثل LiRA باشد. هدف آن بازسازی training distribution مدل هدف نیست. هدف آن فقط تخمین difficulty عمومی متن است.
 
-<div dir="ltr" align="left">
+ویژگی‌های مطلوب reference model:
 
-```bash
-git checkout RN-MIA
-```
+- کوچک باشد.
+- عمومی باشد.
+- public باشد.
+- روی داده‌ی private target fine-tune نشده باشد.
+- هزینه inference پایینی داشته باشد.
+- fluency و difficulty عمومی متن را تقریب بزند.
 
-</div>
-
-### 11.2. ساخت environment
-
-اگر قبلاً environment پروژه را ساخته‌ای، این مرحله لازم نیست.
-
-<div dir="ltr" align="left">
-
-```bash
-conda activate mia
-```
+نمونه‌های مناسب:
 
 </div>
-
-یا اگر لازم بود:
-
-<div dir="ltr" align="left">
-
-```bash
-conda create -n mia python=3.10
-conda activate mia
-pip install -r requirements.txt
-```
-
-</div>
-
-### 11.3. اجرای آزمایش پایه با reference model
-
-نمونه‌ی command پیشنهادی:
-
-<div dir="ltr" align="left">
-
-```bash
-python run_mia_unified.py \
-  --output_name rn_mia_gptneo_ref_gpt2 \
-  --base_model_name EleutherAI/gpt-neo-2.7B \
-  --ref_model gpt2 \
-  --mask_filling_model_name t5-3b \
-  --n_perturbation_list 25 \
-  --n_samples 1000 \
-  --pct_words_masked 0.3 \
-  --span_length 2 \
-  --cache_dir cache \
-  --dataset_member the_pile \
-  --dataset_member_key text \
-  --dataset_nonmember xsum \
-  --max_length 2000
-```
-
-</div>
-
-نکته: بسته به پیاده‌سازی branch، ممکن است argument مخصوص RN-MIA اضافه شده باشد، مثلاً:
-
-<div dir="ltr" align="left">
-
-```bash
---criterion rn
-```
-
-</div>
-
-یا:
-
-<div dir="ltr" align="left">
-
-```bash
---attack rn_mia
-```
-
-</div>
-
-اگر branch هنوز این argument را ندارد، باید در کد مشخص شود که score نهایی به جای `d` یا `z`، مقدار زیر باشد:
-
-<div dir="ltr" align="left">
-
-```python
-rn_score = target_gap - reference_gap
-```
-
-</div>
-
----
-
-## 12. خروجی‌های مورد انتظار
-
-بعد از اجرا باید خروجی‌هایی شبیه موارد زیر ذخیره شوند:
-
-<div dir="ltr" align="left">
-
-```text
-results/rn_mia_gptneo_ref_gpt2.json
-results/rn_mia_gptneo_ref_gpt2_roc.png
-results/rn_mia_gptneo_ref_gpt2_pr.png
-```
-
-</div>
-
-فایل JSON باید شامل موارد زیر باشد:
-
-<div dir="ltr" align="left">
-
-```json
-{
-  "name": "RN-MIA",
-  "criterion": "rn",
-  "predictions": {
-    "real": [],
-    "samples": []
-  },
-  "metrics": {
-    "roc_auc": 0.0,
-    "fpr": [],
-    "tpr": []
-  },
-  "pr_metrics": {
-    "pr_auc": 0.0
-  }
-}
-```
-
-</div>
-
----
-
-## 13. متریک‌های اصلی برای گزارش
-
-برای RN-MIA فقط AUC کافی نیست. چون هدف اصلی این branch کاهش false positiveهای سخت است.
-
-پس حتماً این متریک‌ها گزارش شوند:
-
-<div dir="ltr" align="left">
-
-```text
-ROC-AUC
-PR-AUC
-TPR@5%FPR
-TPR@1%FPR
-TPR@0.1%FPR
-TPR@0.01%FPR
-```
-
-</div>
-
-برای پایان‌نامه، مهم‌ترین متریک‌ها:
-
-<div dir="ltr" align="left">
-
-```text
-TPR@1%FPR
-TPR@0.1%FPR
-```
-
-</div>
-
-چون RN-MIA اساساً برای بهتر کردن low-FPR regime طراحی شده است.
-
----
-
-## 14. مقایسه‌ی تجربی پیشنهادی
-
-RN-MIA باید حداقل با روش‌های زیر مقایسه شود:
-
-| روش | توضیح |
-|---|---|
-| LOSS | baseline خام بدون calibration |
-| N-MIA / d-score | neighbourhood gap پایه |
-| ZN-MIA | standardized neighbourhood gap |
-| RN-MIA | residual neighbourhood gap |
-
-جدول پیشنهادی برای گزارش:
-
-| Attack | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR |
-|---|---:|---:|---:|---:|
-| LOSS | - | - | - | - |
-| N-MIA | - | - | - | - |
-| ZN-MIA | - | - | - | - |
-| RN-MIA | - | - | - | - |
-
----
-
-## 15. Ablation studies پیشنهادی
-
-برای اینکه RN-MIA در پایان‌نامه قوی‌تر شود، این ablationها پیشنهاد می‌شوند:
-
-### 15.1. اثر نوع reference model
-
-مدل‌های مختلف reference را تست کن:
 
 <div dir="ltr" align="left">
 
 ```text
 distilgpt2
 gpt2
-gpt2-medium
 EleutherAI/gpt-neo-125M
 facebook/opt-125m
 ```
 
 </div>
 
-هدف:
+<div dir="rtl" align="right">
 
-> آیا reference کوچک‌تر بهتر generic difficulty را حذف می‌کند؟
+در آزمایش‌های فعلی ما از `distilgpt2` به عنوان reference model استفاده شده است.
 
-### 15.2. اثر تعداد neighbours
+---
+
+## تفاوت RN-MIA با ZN-MIA
+
+ZN-MIA gap مدل هدف را با standard deviation neighbourهای همان مدل normalize می‌کند:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+Z_T(x)=\frac{G_T(x)}{\sigma_T(N(x))}
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+اما RN-MIA از reference model استفاده می‌کند:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+S_{RN}(x)=G_T(x)-G_R(x)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+پس تفاوت اصلی این است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | What it controls |
+|---|---|
+| ZN-MIA | Local variance of neighbour scores |
+| RN-MIA | Generic text difficulty and shared perturbation artifacts |
+
+</div>
+
+<div dir="rtl" align="right">
+
+ZN-MIA سبک‌تر است چون reference model ندارد. اما RN-MIA target-specificتر است، چون effectهای عمومی زبان را با reference model حذف می‌کند.
+
+---
+
+## تفاوت RN-MIA با QN-MIA
+
+QN-MIA rank-based است و جایگاه متن اصلی را در توزیع neighbourهای target model می‌سنجد. اما RN-MIA score-based است و از reference model استفاده می‌کند.
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | Main idea | Reference model | Rank-based |
+|---|---|---|---|
+| QN-MIA | Rank of original among neighbours | No | Yes |
+| RN-MIA | Target gap minus reference gap | Yes | No |
+
+</div>
+
+<div dir="rtl" align="right">
+
+QN-MIA non-parametric است، اما magnitude اختلاف را از دست می‌دهد. RN-MIA magnitude را حفظ می‌کند و generic difficulty را حذف می‌کند.
+
+---
+
+## تفاوت RN-MIA با RRN-MIA
+
+RRN-MIA ترکیب RN-MIA و QN-MIA است.
+
+RN-MIA residual score را می‌سازد:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+S_{RN}(x)=G_T(x)-G_R(x)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+اما RRN-MIA residual likelihood متن اصلی را نسبت به residual likelihood neighbourها rank می‌کند:
+
+</div>
+
+<div dir="ltr" align="left">
+
+$$
+\Delta LL(y)=LL_T(y)-LL_R(y)
+$$
+
+$$
+p_{RRN}(x)=
+\frac{1+\sum_i\mathbf{1}[\Delta LL(x'_i)\geq\Delta LL(x)]}{k+1}
+$$
+
+$$
+RRN\_score(x)=1-p_{RRN}(x)
+$$
+
+</div>
+
+<div dir="rtl" align="right">
+
+بنابراین:
+
+</div>
 
 <div dir="ltr" align="left">
 
 ```text
-k = 10
-k = 25
-k = 50
-k = 100
+RN-MIA  = residual score-based attack
+RRN-MIA = residual rank-based attack
 ```
 
 </div>
 
-انتظار:
+<div dir="rtl" align="right">
 
-- با k بیشتر، تخمین gap پایدارتر می‌شود.
-- بهبود RN-MIA مخصوصاً در TPR@low-FPR بهتر دیده می‌شود.
+---
 
-### 15.3. اثر dataset
+## الگوریتم RN-MIA
 
-روی چند جفت member / non-member تست شود:
+</div>
 
 <div dir="ltr" align="left">
 
 ```text
-Pile vs XSum
-WritingPrompts vs XSum
-PubMed vs XSum
+Input:
+    x                  target text
+    T                  target language model
+    R                  small reference model
+    M                  mask-filling model, e.g. T5
+    k                  number of neighbours
+
+Step 1:
+    Generate neighbours:
+        N(x) = {x'_1, ..., x'_k}
+
+Step 2:
+    Compute target log-likelihoods:
+        LL_T(x), LL_T(x'_1), ..., LL_T(x'_k)
+
+Step 3:
+    Compute reference log-likelihoods:
+        LL_R(x), LL_R(x'_1), ..., LL_R(x'_k)
+
+Step 4:
+    Compute target neighbourhood gap:
+        G_T = LL_T(x) - mean_i LL_T(x'_i)
+
+Step 5:
+    Compute reference neighbourhood gap:
+        G_R = LL_R(x) - mean_i LL_R(x'_i)
+
+Step 6:
+    Compute residual neighbourhood score:
+        S_RN = G_T - G_R
+
+Step 7:
+    Larger S_RN means more member-like.
 ```
 
 </div>
 
----
-
-## 16. failure cases
-
-RN-MIA ممکن است در چند حالت شکست بخورد:
-
-### 16.1. reference model هم همان متن را memorized کرده باشد
-
-اگر reference model نیز متن اصلی را حفظ کرده باشد، \(G_R(x)\) بزرگ می‌شود و سیگنال واقعی target model حذف می‌شود.
-
-### 16.2. reference model خیلی ضعیف باشد
-
-اگر reference model کیفیت زبانی کافی نداشته باشد، \(G_R(x)\) noisy می‌شود و residual هم ناپایدار خواهد شد.
-
-### 16.3. neighbourhood quality پایین باشد
-
-اگر perturbationها از نظر معنی یا ساختار خیلی دور شوند، هم target gap و هم reference gap ممکن است artifact-driven شوند.
-
-### 16.4. domain mismatch شدید باشد
-
-اگر reference model روی دامنه‌ای کاملاً متفاوت آموزش دیده باشد، ممکن است difficulty عمومی متن را درست تخمین نزند.
+<div dir="rtl" align="right">
 
 ---
-<!-- 
-## 17. claim مناسب برای پایان‌نامه
 
-برای نوشتن پایان‌نامه، claim را خیلی دقیق بیان کن:
+# نصب و آماده‌سازی محیط
 
-> RN-MIA extends the original neighbourhood attack by residualizing the target model’s local neighbourhood advantage against the corresponding advantage of a universal small reference language model. This removes generic linguistic difficulty and perturbation artifacts that are visible to both models, and keeps the target-specific component of the neighbourhood signal, which is expected to improve reliability in low-FPR membership inference settings.
+## 1. ساخت محیط مجازی
 
-ترجمه‌ی مفهومی:
+اگر از `venv` استفاده می‌کنید:
 
-> RN-MIA حمله‌ی neighbourhood اولیه را با استفاده از یک مدل مرجع کوچک توسعه می‌دهد. این مدل مرجع کمک می‌کند اثرهای عمومی زبان و artifactهای تولید neighbour حذف شوند. در نتیجه score نهایی بیشتر نشان‌دهنده‌ی رفتار خاص مدل هدف است، نه صرفاً آسان یا طبیعی بودن متن.
+</div>
 
---- -->
+<div dir="ltr" align="left">
 
-## 17. خلاصه‌ی نهایی
+```bash
+python3 -m venv mia
+source mia/bin/activate
+```
 
-**RN-MIA** یک variant مهم از خانواده‌ی حملات neighbourhood است.
+</div>
+
+<div dir="rtl" align="right">
+
+اگر از `conda` استفاده می‌کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+conda create -n mia python=3.10 -y
+conda activate mia
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+## 2. نصب requirements
+
+اگر فایل `requirements.txt` در repo وجود دارد:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر بعضی packageها missing بودند، حداقل dependencyهای زیر را نصب کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+pip install -U torch transformers datasets numpy scikit-learn matplotlib tqdm accelerate sentencepiece protobuf
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+برای اطمینان از نصب packageهای اصلی:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python - <<'PY'
+import torch
+import transformers
+import datasets
+import sklearn
+import numpy
+import matplotlib
+
+print("torch:", torch.__version__)
+print("transformers:", transformers.__version__)
+print("datasets:", datasets.__version__)
+print("sklearn:", sklearn.__version__)
+print("numpy:", numpy.__version__)
+print("matplotlib:", matplotlib.__version__)
+print("CUDA available:", torch.cuda.is_available())
+PY
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# فایل‌های مهم شاخه
+
+</div>
+
+<div dir="ltr" align="left">
+
+| File | Purpose |
+|---|---|
+| `Residual_neighborhood_attack.py` | اسکریپت اصلی اجرای RN-MIA |
+| `run_mia_unified.py` | توابع مشترک برای load model، تولید neighbour، likelihood و metricها |
+| `custom_datasets.py` | dataset utilities |
+| `plot_curves.py` | استخراج ROC و PR curve از JSON خروجی |
+| `results/` | محل ذخیره نتایج |
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# Experimental Setup
+
+در آزمایش فعلی RN-MIA، setup زیر استفاده شده است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Component | Value |
+|---|---|
+| Target model | `./ft_distilgpt2_highlights` |
+| Reference model | `distilgpt2` |
+| Dataset | CNN/DailyMail v3.0.0 |
+| Member split | `train[:50000]`, field `highlights` |
+| Non-member split | `validation`, field `highlights` |
+| Number of member samples | 1000 |
+| Number of non-member samples | 1000 |
+| Mask-filling model | `t5-small` |
+| Mask percentage | `0.20` |
+| Span length | `1` |
+| Number of neighbours | `10` |
+| Criterion | `rn` |
+| Internal criterion | `d` on residual likelihoods |
+
+</div>
+
+<div dir="rtl" align="right">
+
+در این setup، target model قبلاً روی CNN/DailyMail highlights fine-tune شده است. بنابراین memberها از train split و non-memberها از validation split انتخاب می‌شوند.
+
+---
+
+# اجرای RN-MIA
+
+## اجرای RN-MIA با 10 همسایه و 1000 نمونه
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+rm -f results/rn_mia_n10_1000.json
+
+HF_DATASETS_OFFLINE=1 HF_HUB_OFFLINE=1 python Residual_neighborhood_attack.py \
+  --cache_dir ./.hf_cache \
+  --dataset_member cnn_dailymail_highlights --dataset_member_key highlights \
+  --dataset_nonmember cnn_dailymail_highlights --dataset_nonmember_key highlights \
+  --mask_filling_model_name t5-small \
+  --pct_words_masked 0.20 \
+  --span_length 1 \
+  --n_perturbations 10 \
+  --n_samples 1000 \
+  --batch_size 50 \
+  --chunk_size 20 \
+  --base_model_name "$(realpath ./ft_distilgpt2_highlights)" \
+  --ref_model distilgpt2 \
+  --criterion rn \
+  --save_path results/rn_mia_n10_1000.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر branch قدیمی‌تر فقط مسیر `results/rn_mia_n10.json` را استفاده می‌کند، می‌توانید همان نام را نگه دارید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+--save_path results/rn_mia_n10.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر CUDA memory کم بود، مقدارهای زیر را کوچک‌تر کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+--batch_size 25 \
+--chunk_size 10
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# استخراج metricها از فایل خروجی
+
+برای استخراج ROC-AUC، PR-AUC و TPR در FPRهای پایین:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python - <<'PY'
+import json
+import numpy as np
+from pathlib import Path
+
+p = Path("results/rn_mia_n10_1000.json")
+if not p.exists():
+    p = Path("results/rn_mia_n10.json")
+
+d = json.load(open(p))
+
+if isinstance(d, list):
+    d = d[0]
+
+fpr = np.array(d["metrics"]["fpr"])
+tpr = np.array(d["metrics"]["tpr"])
+
+def tpr_at(alpha):
+    mask = fpr <= alpha
+    return float(tpr[mask].max()) if mask.any() else 0.0
+
+print("file:", p)
+print("name:", d.get("name"))
+print("criterion:", d.get("criterion"))
+print("internal_criterion:", d.get("internal_criterion"))
+print("num_real:", len(d["predictions"]["real"]))
+print("num_samples:", len(d["predictions"]["samples"]))
+print("raw_results:", len(d.get("raw_results", [])))
+print("roc_auc:", d["metrics"]["roc_auc"])
+print("pr_auc:", d["pr_metrics"]["pr_auc"])
+print("TPR@1%FPR:", tpr_at(0.01))
+print("TPR@0.1%FPR:", tpr_at(0.001))
+print("TPR@0.01%FPR:", tpr_at(0.0001))
+PY
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+خروجی معتبر آزمایش فعلی:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+name: RN_MIA_n10
+criterion: rn
+internal_criterion: d
+roc_auc: 0.6546505
+pr_auc: 0.6237654590415775
+TPR@1%FPR: 0.017
+TPR@0.1%FPR: 0.0
+TPR@0.01%FPR: 0.0
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# استخراج نمودارهای ROC و PR
+
+برای تولید دو نمودار زیر:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+roc_curve.png
+pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+ابتدا فایل `plot_curves.py` را در ریشه پروژه بسازید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```python
+import os
+import json
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def load_result(path):
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if isinstance(data, list):
+        data = data[0]
+
+    return data
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--result_json",
+        type=str,
+        required=True,
+        help="Path to result JSON file"
+    )
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default=None,
+        help="Directory to save roc_curve.png and pr_curve.png"
+    )
+
+    args = parser.parse_args()
+
+    d = load_result(args.result_json)
+
+    out_dir = args.out_dir or os.path.dirname(args.result_json)
+    os.makedirs(out_dir, exist_ok=True)
+
+    name = d.get("name", "MIA_Result")
+
+    # ROC curve
+    fpr = np.array(d["metrics"]["fpr"], dtype=float)
+    tpr = np.array(d["metrics"]["tpr"], dtype=float)
+    roc_auc = float(d["metrics"]["roc_auc"])
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(fpr, tpr, label=f"{name} (ROC-AUC = {roc_auc:.4f})")
+    plt.plot([0, 1], [0, 1], linestyle="--", label="Random baseline")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve - {name}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, "roc_curve.png"), dpi=200)
+    plt.close()
+
+    # Precision-Recall curve
+    recall = np.array(d["pr_metrics"]["recall"], dtype=float)
+    precision = np.array(d["pr_metrics"]["precision"], dtype=float)
+    pr_auc = float(d["pr_metrics"]["pr_auc"])
+
+    plt.figure(figsize=(7, 5))
+    plt.plot(recall, precision, label=f"{name} (PR-AUC = {pr_auc:.4f})")
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title(f"Precision-Recall Curve - {name}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, "pr_curve.png"), dpi=200)
+    plt.close()
+
+    print("Saved:", os.path.join(out_dir, "roc_curve.png"))
+    print("Saved:", os.path.join(out_dir, "pr_curve.png"))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+برای RN-MIA اجرا کنید:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python plot_curves.py \
+  --result_json results/rn_mia_n10_1000.json \
+  --out_dir results/rn_mia_n10_plots
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اگر فایل شما با نام قدیمی ذخیره شده است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```bash
+python plot_curves.py \
+  --result_json results/rn_mia_n10.json \
+  --out_dir results/rn_mia_n10_plots
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+خروجی:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/rn_mia_n10_plots/roc_curve.png
+results/rn_mia_n10_plots/pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# نتایج RN-MIA
+
+نتیجه معتبر RN-MIA با 1000 member و 1000 non-member:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Samples | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR | TPR@0.01%FPR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| RN-MIA | 10 | 1000 | **0.654651** | **0.623765** | **1.70%** | 0.00% | 0.00% |
+
+</div>
+
+<div dir="rtl" align="right">
+
+RN-MIA نسبت به Original و ZN-MIA بهبود واضحی در ROC-AUC و PR-AUC ایجاد کرده است. این نشان می‌دهد که reference-based residual calibration در این setup سیگنال membership قوی‌تری نسبت به neighbourhood gap خام یا z-normalized gap فراهم کرده است.
+
+---
+
+# مقایسه با Original، ZN، QN و RRN
+
+جدول زیر نتایج فعلی روش‌های مختلف را نشان می‌دهد:
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Samples | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR | TPR@0.01%FPR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Original Neighbourhood | 10 | 1000 | 0.591787 | 0.569768 | 1.10% | 0.00% | 0.00% |
+| ZN-MIA | 10 | 1000 | 0.587588 | 0.567956 | 1.70% | 0.10% | 0.10% |
+| RN-MIA | 10 | 1000 | **0.654651** | **0.623765** | **1.70%** | 0.00% | 0.00% |
+| QN-MIA | 10 | 1000 | 0.509758 | 0.543458 | 0.00% | 0.00% | 0.00% |
+| QN-MIA | 50 | 1000 | 0.551854 | 0.539276 | 1.00% | 0.00% | 0.00% |
+| RRN-MIA | 10 | 1000 | 0.657015 | 0.677290 | 0.00% | 0.00% | 0.00% |
+| RRN-MIA | 50 | 1000 | **0.692407** | **0.711859** | **8.20%** | **1.80%** | 0.00% |
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+## مقایسه RN-MIA با Original Neighbourhood Attack
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | ROC-AUC | PR-AUC | TPR@1%FPR |
+|---|---:|---:|---:|---:|
+| Original Neighbourhood | 10 | 0.591787 | 0.569768 | 1.10% |
+| RN-MIA | 10 | **0.654651** | **0.623765** | **1.70%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+بهبود RN-MIA نسبت به Original:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+ROC-AUC gain = 0.654651 - 0.591787 = +0.062864
+PR-AUC gain  = 0.623765 - 0.569768 = +0.053997
+TPR@1%FPR gain = 1.70% - 1.10% = +0.60 percentage points
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+این نشان می‌دهد که حذف رفتار مشترک reference model باعث تقویت global membership signal شده است.
+
+---
+
+## مقایسه RN-MIA با ZN-MIA
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Reference model | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR |
+|---|---:|---|---:|---:|---:|---:|
+| ZN-MIA | 10 | No | 0.587588 | 0.567956 | 1.70% | **0.10%** |
+| RN-MIA | 10 | Yes, `distilgpt2` | **0.654651** | **0.623765** | 1.70% | 0.00% |
+
+</div>
+
+<div dir="rtl" align="right">
+
+RN-MIA از نظر ROC-AUC و PR-AUC بهتر از ZN-MIA است:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+ROC-AUC gain = 0.654651 - 0.587588 = +0.067063
+PR-AUC gain  = 0.623765 - 0.567956 = +0.055809
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+اما ZN-MIA در این run خاص در `TPR@0.1%FPR` و `TPR@0.01%FPR` مقدار غیرصفر دارد، درحالی‌که RN-MIA صفر است. بنابراین RN-MIA global ranking را بهتر کرده، اما low-FPR خیلی شدید هنوز محدود باقی مانده است.
+
+---
+
+## مقایسه RN-MIA با QN-MIA
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Reference model | ROC-AUC | PR-AUC | TPR@1%FPR |
+|---|---:|---|---:|---:|---:|
+| QN-MIA | 10 | No | 0.509758 | 0.543458 | 0.00% |
+| QN-MIA | 50 | No | 0.551854 | 0.539276 | 1.00% |
+| RN-MIA | 10 | Yes, `distilgpt2` | **0.654651** | **0.623765** | **1.70%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+RN-MIA به‌وضوح از QN-MIA بهتر است. این نشان می‌دهد که در این setup، حذف generic text difficulty با reference model مهم‌تر از rank-only scoring بوده است.
+
+---
+
+## مقایسه RN-MIA با RRN-MIA
+
+RRN-MIA نسخه‌ی rank-based از ایده‌ی residual است. یعنی به جای threshold زدن روی residual neighbourhood gap، residual likelihood متن اصلی را نسبت به residual likelihood همسایه‌ها rank می‌کند.
+
+</div>
+
+<div dir="ltr" align="left">
+
+| Method | k | Reference model | ROC-AUC | PR-AUC | TPR@1%FPR | TPR@0.1%FPR |
+|---|---:|---|---:|---:|---:|---:|
+| RN-MIA | 10 | Yes, `distilgpt2` | 0.654651 | 0.623765 | 1.70% | 0.00% |
+| RRN-MIA | 10 | Yes, `distilgpt2` | 0.657015 | **0.677290** | 0.00% | 0.00% |
+| RRN-MIA | 50 | Yes, `distilgpt2` | **0.692407** | **0.711859** | **8.20%** | **1.80%** |
+
+</div>
+
+<div dir="rtl" align="right">
+
+RRN-MIA با 50 neighbour بهترین نتیجه را دارد. این نشان می‌دهد که residualization به تنهایی مفید است، اما ترکیب آن با rank-based local testing و افزایش تعداد neighbourها عملکرد را به‌طور قابل توجهی بهتر می‌کند.
+
+---
+
+# تحلیل نتایج
+
+در این setup، RN-MIA نسبت به Original و ZN-MIA از نظر ROC-AUC و PR-AUC بهتر عمل کرده است:
+
+- ROC-AUC از `0.591787` در Original به `0.654651` در RN-MIA افزایش یافته است.
+- PR-AUC از `0.569768` در Original به `0.623765` در RN-MIA افزایش یافته است.
+- TPR@1%FPR از `1.10%` به `1.70%` افزایش یافته است.
+
+این نتیجه نشان می‌دهد که reference-based residual calibration یک membership signal قوی‌تر ایجاد کرده است.
+
+با این حال، در FPRهای خیلی پایین‌تر، RN-MIA هنوز TPR صفر دارد. این یعنی RN-MIA global separability را بهتر کرده، اما برای low-FPR شدید، rank-based residual testing با تعداد neighbour بیشتر، یعنی RRN-MIA، بهتر عمل کرده است.
+
+---
+
+# چرا RN-MIA در low-FPR خیلی شدید هنوز محدود است؟
+
+چند دلیل محتمل:
+
+1. RN-MIA هنوز score-based است و threshold روی residual gap می‌زند.
+2. با \(k=10\)، تخمین neighbourhood gap noisy است.
+3. reference model ممکن است بخشی از signal واقعی را هم حذف کند.
+4. low-FPR شدید با 1000 non-member resolution محدودی دارد.
+5. RRN-MIA با rank-based testing و \(k=50\) در tail بهتر عمل می‌کند.
+
+---
+
+# Expected Outputs
+
+بعد از اجرای موفق RN-MIA، فایل زیر ساخته می‌شود:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/rn_mia_n10_1000.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+یا در branchهای قدیمی‌تر:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/rn_mia_n10.json
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+بعد از اجرای `plot_curves.py`:
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+results/rn_mia_n10_plots/roc_curve.png
+results/rn_mia_n10_plots/pr_curve.png
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# Limitations
+
+RN-MIA چند محدودیت مهم دارد:
+
+1. به reference model نیاز دارد.
+2. اگر reference model خودش متن را memorized کرده باشد، ممکن است signal واقعی کم شود.
+3. اگر reference model خیلی ضعیف باشد، residual noisy می‌شود.
+4. اگر domain mismatch شدید باشد، reference model ممکن است difficulty عمومی متن را درست تخمین نزند.
+5. کیفیت perturbationها روی نتیجه اثر مستقیم دارد.
+6. هزینه محاسباتی آن از Original، ZN و QN بیشتر است، چون target و reference model هر دو باید evaluate شوند.
+7. با \(k=10\)، neighbourhood gap ممکن است هنوز noisy باشد.
+8. برای low-FPR شدید، RN-MIA در این setup از RRN-MIA ضعیف‌تر است.
+
+---
+
+# Summary
+
+</div>
+
+<div dir="ltr" align="left">
+
+```text
+RN-MIA extends the original neighbourhood attack by residualizing the target model's local neighbourhood advantage against the corresponding advantage of a small public reference language model. In the 1000-sample CNN/DailyMail highlights evaluation, RN-MIA achieved ROC-AUC 0.6547 and PR-AUC 0.6238 with 10 neighbours, improving substantially over the original neighbourhood baseline. This indicates that subtracting reference-model behaviour removes generic linguistic difficulty and perturbation artifacts that are visible to both models, leaving a more target-specific membership signal. However, RN-MIA did not improve the most stringent low-FPR operating points in this setup, motivating the residual rank-based extension RRN-MIA.
+```
+
+</div>
+
+<div dir="rtl" align="right">
+
+---
+
+# خلاصه نهایی
+
+RN-MIA یک variant مهم از خانواده‌ی حملات neighbourhood است.
 
 تفاوت اصلی آن با حمله‌ی اولیه این است که فقط نمی‌پرسد:
 
@@ -585,13 +1174,8 @@ RN-MIA ممکن است در چند حالت شکست بخورد:
 
 > آیا target model متن اصلی را بیشتر از یک reference model عمومی بهتر از neighbourها می‌شناسد؟
 
-به همین دلیل RN-MIA می‌تواند false positiveهایی را کاهش دهد که ناشی از موارد زیر هستند:
+در آزمایش‌های فعلی، RN-MIA نسبت به Original و ZN-MIA از نظر ROC-AUC و PR-AUC بهتر عمل کرد. این نشان می‌دهد که residual calibration با reference model سیگنال عضویت target-specificتری ایجاد می‌کند.
 
-- آسان بودن ذاتی متن
-- طبیعی‌تر بودن متن اصلی نسبت به perturbationها
-- artifactهای T5/BERT در neighbour generation
-- local optimality عمومی که در همه‌ی مدل‌ها دیده می‌شود
-
-بنابراین RN-MIA یک گام مهم از **local difficulty calibration** به سمت **target-specific local membership evidence** است.
+با این حال، برای low-FPR شدید، بهترین نتیجه مربوط به RRN-MIA با 50 neighbour بود. بنابراین RN-MIA یک مرحله‌ی مهم و موفق در مسیر رسیدن به RRN-MIA است.
 
 </div>
