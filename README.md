@@ -146,10 +146,7 @@ $$
 <div dir="ltr" align="left">
 
 $$
-S_{RN}(x)=
-\left(LL_T(x)-\frac{1}{k}\sum_i LL_T(x'_i)\right)
--
-\left(LL_R(x)-\frac{1}{k}\sum_i LL_R(x'_i)\right)
+S_{RN}(x)=\left(LL_T(x)-\frac{1}{k}\sum_{i=1}^{k}LL_T(x'_i)\right)-\left(LL_R(x)-\frac{1}{k}\sum_{i=1}^{k}LL_R(x'_i)\right)
 $$
 
 </div>
@@ -198,10 +195,7 @@ $$
 <div dir="ltr" align="left">
 
 $$
-d_{\Delta}(x)=
-\left(LL_T(x)-\frac{1}{k}\sum_iLL_T(x'_i)\right)
--
-\left(LL_R(x)-\frac{1}{k}\sum_iLL_R(x'_i)\right)
+d_{\Delta}(x)=\left(LL_T(x)-\frac{1}{k}\sum_{i=1}^{k}LL_T(x'_i)\right)-\left(LL_R(x)-\frac{1}{k}\sum_{i=1}^{k}LL_R(x'_i)\right)
 $$
 
 </div>
