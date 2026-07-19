@@ -1,3 +1,12 @@
+<!--
+GitHub-compatible version of the complete Meta-MIA design README.
+
+Formatting rule:
+- Persian prose is placed in RTL HTML blocks.
+- Mathematical expressions are outside HTML blocks and use GitHub's `math` fences.
+- Code, diagrams, and tables remain in regular Markdown fences.
+-->
+
 <div dir="rtl" align="right">
 
 # Meta-MIA: یک چارچوب یادگیری‌محور برای حمله استنتاج عضویت
@@ -94,11 +103,11 @@ Sample x
 
 <div dir="ltr" align="left">
 
-$$
-f_\theta
-$$
-
 </div>
+
+```math
+f_\theta
+```
 
 <div dir="rtl" align="right">
 
@@ -108,15 +117,15 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 m(x)=
 \begin{cases}
 1, & x\in D_{\mathrm{train}},\\
 0, & x\notin D_{\mathrm{train}}.
 \end{cases}
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -126,11 +135,11 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
-z=\Phi(x,f_\theta)
-$$
-
 </div>
+
+```math
+z=\Phi(x,f_\theta)
+```
 
 <div dir="rtl" align="right">
 
@@ -140,11 +149,11 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
-A_\psi(z)=P\bigl(m(x)=1\mid z\bigr)
-$$
-
 </div>
+
+```math
+A_\psi(z)=P\bigl(m(x)=1\mid z\bigr)
+```
 
 <div dir="rtl" align="right">
 
@@ -154,12 +163,12 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \widehat{m}(x)=
 \mathbf{1}\left[A_\psi(z)\geq \tau\right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -181,11 +190,11 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
-S_{\mathrm{loss}}(x)=-L_\theta(x)
-$$
-
 </div>
+
+```math
+S_{\mathrm{loss}}(x)=-L_\theta(x)
+```
 
 <div dir="rtl" align="right">
 
@@ -195,16 +204,16 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_N(x)=
 LL_\theta(x)
 -
 \frac{1}{k}
 \sum_{i=1}^{k}
 LL_\theta(\widetilde{x}_i)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -214,7 +223,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_{\mathrm{Meta}}(x)
 =
 A_\psi
@@ -227,9 +238,7 @@ S_{RRN}(x),
 H(x),
 \ldots
 \right)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -316,7 +325,9 @@ Attack Vector بهتر است از چند **بلوک ویژگی مستقل** س�
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \Phi(x,f_\theta)
 =
 \left[
@@ -328,9 +339,7 @@ $$
 \Phi_{\mathrm{rank}},
 \Phi_{\mathrm{metadata}}
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -344,7 +353,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 LL_T(x)
 =
 \frac{1}{T}
@@ -354,9 +365,7 @@ p_\theta
 \left(
 x_t\mid x_{<t}
 \right)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -366,11 +375,11 @@ Cross-entropy loss:
 
 <div dir="ltr" align="left">
 
-$$
-L_T(x)=-LL_T(x)
-$$
-
 </div>
+
+```math
+L_T(x)=-LL_T(x)
+```
 
 <div dir="rtl" align="right">
 
@@ -380,11 +389,11 @@ Perplexity:
 
 <div dir="ltr" align="left">
 
-$$
-PPL_T(x)=\exp\left(L_T(x)\right)
-$$
-
 </div>
+
+```math
+PPL_T(x)=\exp\left(L_T(x)\right)
+```
 
 <div dir="rtl" align="right">
 
@@ -423,7 +432,9 @@ Log-likelihood، loss و perplexity تبدیل‌های مستقیم یکدیگ�
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 v_t=
 \left[
 -\log p_\theta(x_t\mid x_{<t}),
@@ -431,9 +442,7 @@ H_\theta(t),
 \operatorname{rank}_\theta(x_t),
 \operatorname{margin}_\theta(t)
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -471,7 +480,9 @@ Entropy توزیع خروجی مدل در موقعیت \(t\):
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 H_\theta(t)
 =
 -
@@ -485,9 +496,7 @@ p_\theta
 \left(
 v\mid x_{<t}
 \right)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -497,15 +506,15 @@ Entropy میانگین نمونه:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \overline{H}_\theta(x)
 =
 \frac{1}{T}
 \sum_{t=1}^{T}
 H_\theta(t)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -537,16 +546,16 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_{\mathrm{Min}\text{-}k}(x)
 =
 \frac{1}{|M_k(x)|}
 \sum_{t\in M_k(x)}
 \log
 p_\theta(x_t\mid x_{<t})
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -574,13 +583,13 @@ Residual log-likelihood:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \Delta LL(x)
 =
 LL_T(x)-LL_R(x)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -590,13 +599,13 @@ Residual loss:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \Delta L(x)
 =
 L_T(x)-L_R(x)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -606,13 +615,13 @@ Residual entropy:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \Delta H(x)
 =
 \overline{H}_T(x)-\overline{H}_R(x)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -653,7 +662,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 N(x)=
 \left\{
 \widetilde{x}_1,
@@ -661,9 +672,7 @@ N(x)=
 \dots,
 \widetilde{x}_k
 \right\}
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -673,7 +682,9 @@ Neighbourhood gap پایه:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_N(x)
 =
 LL_T(x)
@@ -681,9 +692,7 @@ LL_T(x)
 \frac{1}{k}
 \sum_{i=1}^{k}
 LL_T(\widetilde{x}_i)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -693,7 +702,9 @@ Z-normalized neighbourhood score:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_Z(x)
 =
 \frac{
@@ -701,9 +712,7 @@ LL_T(x)-\mu_N(x)
 }{
 \sigma_N(x)+\varepsilon
 }
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -713,15 +722,17 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \mu_N(x)
 =
 \frac{1}{k}
 \sum_{i=1}^{k}
 LL_T(\widetilde{x}_i)
-$$
+```
 
-$$
+```math
 \sigma_N(x)
 =
 \sqrt{
@@ -731,9 +742,7 @@ $$
 LL_T(\widetilde{x}_i)-\mu_N(x)
 \right)^2
 }
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -766,13 +775,13 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 r(y)
 =
 LL_T(y)-LL_R(y)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -782,7 +791,9 @@ Residual neighbourhood score:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_{RN}(x)
 =
 r(x)
@@ -790,9 +801,7 @@ r(x)
 \frac{1}{k}
 \sum_{i=1}^{k}
 r(\widetilde{x}_i)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -802,7 +811,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_{RN}(x)
 =
 \left[
@@ -820,9 +831,7 @@ LL_R(x)
 \sum_{i=1}^{k}
 LL_R(\widetilde{x}_i)
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -852,7 +861,9 @@ Empirical p-value روی likelihood هدف:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 p_Q(x)
 =
 \frac{
@@ -867,9 +878,7 @@ LL_T(x)
 }{
 k+1
 }
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -879,11 +888,11 @@ Membership-oriented rank score:
 
 <div dir="ltr" align="left">
 
-$$
-S_Q(x)=1-p_Q(x)
-$$
-
 </div>
+
+```math
+S_Q(x)=1-p_Q(x)
+```
 
 <div dir="rtl" align="right">
 
@@ -908,13 +917,13 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 p_{\min}
 =
 \frac{1}{k+1}
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -932,7 +941,9 @@ Empirical p-value روی residualها:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 p_{RRN}(x)
 =
 \frac{
@@ -947,9 +958,7 @@ r(x)
 }{
 k+1
 }
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -959,13 +968,13 @@ Score عضویت:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 S_{RRN}(x)
 =
 1-p_{RRN}(x)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1020,7 +1029,9 @@ Metadata نباید باعث data leakage شود. برای مثال، اگر mem
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \Phi_{\mathrm{small}}(x)
 =
 \left[
@@ -1036,9 +1047,7 @@ S_Q,
 S_{RRN},
 T
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1324,7 +1333,9 @@ Token Feature Sequence
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 v_t=
 \left[
 L_T(t),
@@ -1334,9 +1345,7 @@ H_R(t),
 \Delta L(t),
 \Delta H(t)
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1346,14 +1355,14 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 V(x)=
 \left(
 v_1,v_2,\dots,v_T
 \right)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1471,14 +1480,14 @@ Gating network یاد می‌گیرد برای هر نمونه به کدام exp
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 f_{\theta_1},
 f_{\theta_2},
 \dots,
 f_{\theta_M}
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1492,7 +1501,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 z_{ij}
 =
 \Phi
@@ -1500,17 +1511,15 @@ z_{ij}
 x_{ij},
 f_{\theta_j}
 \right)
-$$
+```
 
-$$
+```math
 D_{\mathrm{attack}}
 =
 \left\{
 (z_{ij},m_{ij})
 \right\}
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1626,7 +1635,9 @@ Test:
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \mathcal{L}_{BCE}
 =
 -
@@ -1638,9 +1649,7 @@ m_i\log \widehat{p}_i
 (1-m_i)
 \log(1-\widehat{p}_i)
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1652,7 +1661,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \mathcal{L}_{WBCE}
 =
 -
@@ -1663,9 +1674,7 @@ w_1m_i\log \widehat{p}_i
 +
 w_0(1-m_i)\log(1-\widehat{p}_i)
 \right]
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1677,16 +1686,16 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \mathcal{L}_{\mathrm{focal}}
 =
 -
 \alpha
 (1-p_t)^\gamma
 \log p_t
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
@@ -1698,7 +1707,9 @@ $$
 
 <div dir="ltr" align="left">
 
-$$
+</div>
+
+```math
 \mathcal{L}_{\mathrm{rank}}
 =
 \max
@@ -1710,9 +1721,7 @@ S(x_{\mathrm{member}})
 +
 S(x_{\mathrm{nonmember}})
 \right)
-$$
-
-</div>
+```
 
 <div dir="rtl" align="right">
 
