@@ -1,10 +1,11 @@
 <!--
-GitHub-compatible version of the complete Meta-MIA design README.
+Meta-MIA / ERN-MIA research-design README
 
-Formatting rule:
-- Persian prose is placed in RTL HTML blocks.
-- Mathematical expressions are outside HTML blocks and use GitHub's `math` fences.
-- Code, diagrams, and tables remain in regular Markdown fences.
+GitHub rendering rules used in this file:
+1. Persian prose is contained in isolated RTL blocks.
+2. Every formula is outside HTML and uses exactly one GitHub `math` fence.
+3. Code, diagrams, commands, and configuration examples are also outside HTML.
+4. This document proposes an architecture and does not report final results.
 -->
 
 <div dir="rtl" align="right">
@@ -29,8 +30,6 @@ Formatting rule:
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Meta-MIA
 ERN-MIA: Entropy–Residual–Neighbourhood Membership Inference Attack
@@ -38,8 +37,6 @@ ERM-MIA: Entropy–Residual Meta Membership Inference Attack
 NRM-MIA: Neural Residual Meta Membership Inference Attack
 CM-MIA: Calibrated Meta Membership Inference Attack
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -65,8 +62,6 @@ CM-MIA: Calibrated Meta Membership Inference Attack
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Sample x
    │
@@ -89,8 +84,6 @@ Sample x
       Membership Probability
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ---
@@ -101,10 +94,6 @@ Sample x
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 f_\theta
 ```
@@ -112,10 +101,6 @@ f_\theta
 <div dir="rtl" align="right">
 
 نمونه‌ی مورد بررسی برابر با \(x\) است و متغیر عضویت به شکل زیر تعریف می‌شود:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -133,10 +118,6 @@ m(x)=
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 z=\Phi(x,f_\theta)
 ```
@@ -147,21 +128,13 @@ z=\Phi(x,f_\theta)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
-A_\psi(z)=P\bigl(m(x)=1\mid z\bigr)
+A_\psi(z)=P\left(m(x)=1\mid z\right)
 ```
 
 <div dir="rtl" align="right">
 
 تصمیم نهایی با یک آستانه‌ی قابل تنظیم انجام می‌شود:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -188,10 +161,6 @@ A_\psi(z)=P\bigl(m(x)=1\mid z\bigr)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 S_{\mathrm{loss}}(x)=-L_\theta(x)
 ```
@@ -199,10 +168,6 @@ S_{\mathrm{loss}}(x)=-L_\theta(x)
 <div dir="rtl" align="right">
 
 یا فقط بر اساس یک neighbourhood score:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -218,10 +183,6 @@ LL_\theta(\widetilde{x}_i)
 <div dir="rtl" align="right">
 
 اما Meta-MIA یک تابع ترکیب یادگیری‌شده می‌سازد:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -323,10 +284,6 @@ Attack Vector بهتر است از چند **بلوک ویژگی مستقل** س�
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \Phi(x,f_\theta)
 =
@@ -351,10 +308,6 @@ Attack Vector بهتر است از چند **بلوک ویژگی مستقل** س�
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 LL_T(x)
 =
@@ -373,10 +326,6 @@ Cross-entropy loss:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 L_T(x)=-LL_T(x)
 ```
@@ -384,10 +333,6 @@ L_T(x)=-LL_T(x)
 <div dir="rtl" align="right">
 
 Perplexity:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -430,17 +375,13 @@ Log-likelihood، loss و perplexity تبدیل‌های مستقیم یکدیگ�
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 v_t=
 \left[
 -\log p_\theta(x_t\mid x_{<t}),
 H_\theta(t),
-\operatorname{rank}_\theta(x_t),
-\operatorname{margin}_\theta(t)
+\mathrm{rank}_\theta(x_t),
+\mathrm{margin}_\theta(t)
 \right]
 ```
 
@@ -478,10 +419,6 @@ Entropy توزیع خروجی مدل در موقعیت \(t\):
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 H_\theta(t)
 =
@@ -501,10 +438,6 @@ v\mid x_{<t}
 <div dir="rtl" align="right">
 
 Entropy میانگین نمونه:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -544,12 +477,8 @@ H_\theta(t)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
-S_{\mathrm{Min}\text{-}k}(x)
+S_{\mathrm{Min}-k}(x)
 =
 \frac{1}{|M_k(x)|}
 \sum_{t\in M_k(x)}
@@ -581,10 +510,6 @@ Residual log-likelihood:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \Delta LL(x)
 =
@@ -597,10 +522,6 @@ Residual loss:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \Delta L(x)
 =
@@ -610,10 +531,6 @@ L_T(x)-L_R(x)
 <div dir="rtl" align="right">
 
 Residual entropy:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -660,10 +577,6 @@ Residual entropy:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 N(x)=
 \left\{
@@ -677,10 +590,6 @@ N(x)=
 <div dir="rtl" align="right">
 
 Neighbourhood gap پایه:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -700,10 +609,6 @@ Z-normalized neighbourhood score:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 S_Z(x)
 =
@@ -717,10 +622,6 @@ LL_T(x)-\mu_N(x)
 <div dir="rtl" align="right">
 
 که در آن:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -773,10 +674,6 @@ LL_T(\widetilde{x}_i)-\mu_N(x)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 r(y)
 =
@@ -786,10 +683,6 @@ LL_T(y)-LL_R(y)
 <div dir="rtl" align="right">
 
 Residual neighbourhood score:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -806,10 +699,6 @@ r(\widetilde{x}_i)
 <div dir="rtl" align="right">
 
 شکل معادل:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -859,10 +748,6 @@ Empirical p-value روی likelihood هدف:
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 p_Q(x)
 =
@@ -883,10 +768,6 @@ k+1
 <div dir="rtl" align="right">
 
 Membership-oriented rank score:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -915,10 +796,6 @@ S_Q(x)=1-p_Q(x)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 p_{\min}
 =
@@ -936,10 +813,6 @@ p_{\min}
 Residual Rank ترکیب reference calibration و local ranking است.
 
 Empirical p-value روی residualها:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -963,10 +836,6 @@ k+1
 <div dir="rtl" align="right">
 
 Score عضویت:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -1027,10 +896,6 @@ Metadata نباید باعث data leakage شود. برای مثال، اگر mem
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \Phi_{\mathrm{small}}(x)
 =
@@ -1038,7 +903,7 @@ Metadata نباید باعث data leakage شود. برای مثال، اگر mem
 LL_T,
 \sigma_{\mathrm{token}},
 \overline{H}_T,
-S_{\mathrm{Min}\text{-}20},
+S_{\mathrm{Min}-20},
 \Delta LL,
 S_N,
 S_Z,
@@ -1054,8 +919,6 @@ T
 یک نسخه‌ی متوسط می‌تواند شامل ویژگی‌های زیر باشد:
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 Base:
@@ -1097,8 +960,6 @@ Quality:
   neighbour_similarity_std
   neighbour_generation_success_rate
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1209,8 +1070,6 @@ Baseline اصلی و قابل تفسیر.
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Attack Vector
      │
@@ -1228,8 +1087,6 @@ Sigmoid
      │
 P(member)
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1251,8 +1108,6 @@ P(member)
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Input dimension: number of features
 Hidden 1: 128
@@ -1263,8 +1118,6 @@ Activation: GELU
 Dropout: 0.2
 Output: 1 logit
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1291,8 +1144,6 @@ Output: 1 logit
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Token Feature Sequence
         │
@@ -1306,8 +1157,6 @@ Token Feature Sequence
         │
    P(member)
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1331,10 +1180,6 @@ Token Feature Sequence
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 v_t=
 \left[
@@ -1350,10 +1195,6 @@ H_R(t),
 <div dir="rtl" align="right">
 
 سپس توالی زیر وارد Transformer می‌شود:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -1388,8 +1229,6 @@ v_1,v_2,\dots,v_T
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Token statistics ──► Sequence Encoder ──► Token Representation
                                              │
@@ -1403,8 +1242,6 @@ Global attack vector ───────────────────�
                                              ▼
                                        P(member)
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1430,8 +1267,6 @@ Global attack vector ───────────────────�
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Loss Expert
 Entropy Expert
@@ -1445,8 +1280,6 @@ Rank Expert
        ▼
   Membership Score
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1478,10 +1311,6 @@ Gating network یاد می‌گیرد برای هر نمونه به کدام exp
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 f_{\theta_1},
 f_{\theta_2},
@@ -1496,10 +1325,6 @@ f_{\theta_M}
 - نمونه‌های موجود در training set آن با برچسب 1؛
 - نمونه‌های خارج از training set آن با برچسب 0؛
 - برای هر نمونه Attack Vector استخراج می‌شود.
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -1581,8 +1406,6 @@ Threat model قوی‌تری فرض می‌کند و ممکن است تعمیم 
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Train Attack Model:
   GPT-2 Small shadows
@@ -1591,8 +1414,6 @@ Train Attack Model:
 Test Attack Model:
   GPT-Neo target
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1606,8 +1427,6 @@ Test Attack Model:
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Train:
   Dataset A
@@ -1616,8 +1435,6 @@ Train:
 Test:
   Dataset C
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1630,10 +1447,6 @@ Test:
 ## 9.1 Binary Cross-Entropy
 
 تابع پایه:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -1659,10 +1472,6 @@ m_i\log \widehat{p}_i
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \mathcal{L}_{WBCE}
 =
@@ -1684,10 +1493,6 @@ w_0(1-m_i)\log(1-\widehat{p}_i)
 
 </div>
 
-<div dir="ltr" align="left">
-
-</div>
-
 ```math
 \mathcal{L}_{\mathrm{focal}}
 =
@@ -1702,10 +1507,6 @@ w_0(1-m_i)\log(1-\widehat{p}_i)
 ## 9.4 Pairwise Ranking Loss
 
 برای اینکه member score از non-member score بالاتر باشد:
-
-</div>
-
-<div dir="ltr" align="left">
 
 </div>
 
@@ -1762,16 +1563,12 @@ Calibration set باید از train و test مدل حمله جدا باشد.
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 Attack-Model Train Set
 Attack-Model Validation Set
 Calibration Set
 Final Test Set
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -1898,8 +1695,6 @@ Scaler و feature selector فقط روی training set fit شوند. Fit کردن
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 A0: Loss only
 A1: Loss + Entropy
@@ -1915,15 +1710,11 @@ A10: All features without reference model
 A11: All features without token-level sequence
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ### Ablation معماری
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 Logistic Regression
@@ -1937,15 +1728,11 @@ Hybrid Global + Token
 Mixture-of-Experts
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ### Ablation تعداد Neighbour
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 k = 5
@@ -1955,15 +1742,11 @@ k = 50
 k = 100
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ### Ablation Reference Model
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 No reference model
@@ -1972,8 +1755,6 @@ Base checkpoint reference
 Different-family reference
 Reference ensemble
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -2054,8 +1835,6 @@ Reference ensemble
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 sample_id
 model_id
@@ -2074,15 +1853,11 @@ rrn_score
 sequence_length
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ## مرحله‌ی 2: Baseline Classifiers
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 Logistic Regression
@@ -2090,8 +1865,6 @@ Random Forest
 XGBoost
 Small MLP
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -2124,8 +1897,6 @@ Attack Model فقط روی Shadow Modelها آموزش داده شود و target
 # 19. ساختار پیشنهادی فایل‌ها
 
 </div>
-
-<div dir="ltr" align="left">
 
 ```text
 meta_mia/
@@ -2166,8 +1937,6 @@ meta_mia/
 └── results/
 ```
 
-</div>
-
 <div dir="rtl" align="right">
 
 ---
@@ -2201,16 +1970,12 @@ meta_mia/
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 The proposed attack outperforms existing attacks.
 The method significantly improves low-FPR performance.
 The model is more robust than RRN-MIA.
 The attack generalizes across architectures.
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
@@ -2242,8 +2007,6 @@ Attack Model می‌تواند از یک Logistic Regression ساده تا XGBoo
 
 </div>
 
-<div dir="ltr" align="left">
-
 ```text
 1. Build a compact feature vector.
 2. Train Logistic Regression as the baseline.
@@ -2254,8 +2017,6 @@ Attack Model می‌تواند از یک Logistic Regression ساده تا XGBoo
 7. Add a token-level model only after validating the feature-based approach.
 8. Optimize and calibrate specifically for low-FPR evaluation.
 ```
-
-</div>
 
 <div dir="rtl" align="right">
 
