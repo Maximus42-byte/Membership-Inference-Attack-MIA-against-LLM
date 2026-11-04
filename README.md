@@ -218,6 +218,7 @@ This writes `roc_curve.png` and `pr_curve.png` into the output directory.
 6. All experiments use a single target model and dataset; the findings have not
    been tested across architectures or domains.
 
+   
 ## Credits
 
 The neighbourhood comparison attack and parts of the evaluation code come from:
@@ -226,6 +227,8 @@ The neighbourhood comparison attack and parts of the evaluation code come from:
 > *Membership Inference Attacks against Language Models via Neighbourhood
 > Comparison.* ACL 2023. https://github.com/justusmattern27/neighbour-mia
 
-The calibration framework, the ZN/RN/QN/RRN variants and the benchmark in this
-repository are the contribution of this work.
+`run_mia_unified.py` and `custom_datasets.py` originate from that repository and
+are not covered by this repository's license.
 
+The calibration framework, the ZN/RN/QN/RRN variants and the benchmark in this
+repository are the contribution of this work. All other files are original.
